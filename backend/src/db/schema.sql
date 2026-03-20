@@ -158,4 +158,35 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (order_id);
 
+-- ============================================================
+-- Phase 4: Payments
+-- ============================================================
+
+-- ── Payments ──────────────────────────────────────────────────────────────────
+-- One payment attempt per order. Re-attempts create new rows (history preserved).
+CREATE TABLE IF NOT EXISTS payments (
+  id               UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id         UUID          NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
+  user_id          UUID          NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  amount           NUMERIC(10,2) NOT NULL CHECK (amount >= 0),
+  payment_method   VARCHAR(30)   NOT NULL
+                   CHECK (payment_method IN ('card', 'upi', 'cash_on_delivery')),
+  payment_status   VARCHAR(20)   NOT NULL DEFAULT 'pending'
+                   CHECK (payment_status IN ('pending', 'success', 'failed')),
+  transaction_id   VARCHAR(100),   -- set on success
+  failure_reason   TEXT,           -- set on failure
+  created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_order  ON payments (order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_user   ON payments (user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments (payment_status);
+
+DROP TRIGGER IF EXISTS set_payments_updated_at ON payments;
+CREATE TRIGGER set_payments_updated_at
+  BEFORE UPDATE ON payments
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_updated_at();
+
 

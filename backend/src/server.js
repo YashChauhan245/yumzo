@@ -9,11 +9,13 @@ const authRoutes = require('./routes/auth');
 const restaurantRoutes = require('./routes/restaurants');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
+const paymentRoutes = require('./routes/payments');
 const { createUsersTable } = require('./models/user');
 const { createRestaurantsTable } = require('./models/restaurant');
 const { createMenuItemsTable } = require('./models/menuItem');
 const { createCartItemsTable } = require('./models/cartItem');
 const { createOrderTables } = require('./models/order');
+const { createPaymentsTable } = require('./models/payment');
 
 const app = express();
 
@@ -66,6 +68,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) =>
@@ -90,6 +93,7 @@ const start = async () => {
       await createMenuItemsTable();
       await createCartItemsTable();
       await createOrderTables();
+      await createPaymentsTable();
       console.log('✅ Database tables ensured');
     } else {
       console.warn('⚠️  DATABASE_URL not set – skipping DB initialisation');

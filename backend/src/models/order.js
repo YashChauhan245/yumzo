@@ -127,4 +127,17 @@ const findById = async (orderId, userId) => {
   return { ...orderRows[0], items: itemRows };
 };
 
-module.exports = { createOrderTables, createOrder, findByUser, findById };
+/**
+ * Update the status of an order.
+ * @param {string} orderId  UUID
+ * @param {string} status   New status
+ */
+const updateStatus = async (orderId, status) => {
+  const { rows } = await query(
+    `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+    [status, orderId],
+  );
+  return rows[0] || null;
+};
+
+module.exports = { createOrderTables, createOrder, findByUser, findById, updateStatus };
