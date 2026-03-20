@@ -1,0 +1,98 @@
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+const authRoutes = require('./routes/auth');
+const { createUsersTable } = require('./models/user');
+
+const app = express();
+
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet());
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS policy: origin ${origin} is not allowed`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
+
+// ── Body parsing ──────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// ── Global rate limit ─────────────────────────────────────────────────────────
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 0 : 100, // 0 = disabled in test
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+});
+app.use(globalLimiter);
+
+// ── Health check ──────────────────────────────────────────────────────────────
+app.get('/health', (_req, res) =>
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() }),
+);
+
+// ── API routes ────────────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+
+// ── 404 handler ───────────────────────────────────────────────────────────────
+app.use((_req, res) =>
+  res.status(404).json({ success: false, message: 'Route not found' }),
+);
+
+// ── Global error handler ──────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
+// ── Bootstrap ────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+
+const start = async () => {
+  try {
+    if (process.env.DATABASE_URL) {
+      await createUsersTable();
+      console.log('✅ Database tables ensured');
+    } else {
+      console.warn('⚠️  DATABASE_URL not set – skipping DB initialisation');
+    }
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Yumzo API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+};
+
+// Only start listening when this file is run directly (not when imported in tests)
+if (require.main === module) {
+  start();
+}
+
+module.exports = app; // exported for testing
