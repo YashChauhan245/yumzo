@@ -7,9 +7,13 @@ const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const restaurantRoutes = require('./routes/restaurants');
+const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/orders');
 const { createUsersTable } = require('./models/user');
 const { createRestaurantsTable } = require('./models/restaurant');
 const { createMenuItemsTable } = require('./models/menuItem');
+const { createCartItemsTable } = require('./models/cartItem');
+const { createOrderTables } = require('./models/order');
 
 const app = express();
 
@@ -60,6 +64,8 @@ app.get('/health', (_req, res) =>
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) =>
@@ -82,6 +88,8 @@ const start = async () => {
       await createUsersTable();
       await createRestaurantsTable();
       await createMenuItemsTable();
+      await createCartItemsTable();
+      await createOrderTables();
       console.log('✅ Database tables ensured');
     } else {
       console.warn('⚠️  DATABASE_URL not set – skipping DB initialisation');

@@ -96,3 +96,66 @@ CREATE TRIGGER set_menu_items_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION trigger_set_updated_at();
 
+-- ============================================================
+-- Phase 3: Cart & Orders
+-- ============================================================
+
+-- ── Cart items ────────────────────────────────────────────────────────────────
+-- One row per (user, menu_item). Quantity is incremented on conflict.
+CREATE TABLE IF NOT EXISTS cart_items (
+  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       UUID          NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  menu_item_id  UUID          NOT NULL REFERENCES menu_items (id) ON DELETE CASCADE,
+  restaurant_id UUID          NOT NULL REFERENCES restaurants (id) ON DELETE CASCADE,
+  quantity      INTEGER       NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, menu_item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_cart_user ON cart_items (user_id);
+
+DROP TRIGGER IF EXISTS set_cart_items_updated_at ON cart_items;
+CREATE TRIGGER set_cart_items_updated_at
+  BEFORE UPDATE ON cart_items
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_updated_at();
+
+-- ── Orders ────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS orders (
+  id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID          NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  restaurant_id   UUID          NOT NULL REFERENCES restaurants (id) ON DELETE CASCADE,
+  status          VARCHAR(30)   NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered', 'cancelled')),
+  total_amount    NUMERIC(10,2) NOT NULL CHECK (total_amount >= 0),
+  delivery_address TEXT         NOT NULL,
+  notes           TEXT,
+  created_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_user        ON orders (user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_restaurant  ON orders (restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status      ON orders (status);
+
+DROP TRIGGER IF EXISTS set_orders_updated_at ON orders;
+CREATE TRIGGER set_orders_updated_at
+  BEFORE UPDATE ON orders
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_set_updated_at();
+
+-- ── Order items (snapshot of price at time of order) ─────────────────────────
+CREATE TABLE IF NOT EXISTS order_items (
+  id            UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id      UUID          NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
+  menu_item_id  UUID          NOT NULL REFERENCES menu_items (id) ON DELETE RESTRICT,
+  name          VARCHAR(150)  NOT NULL,   -- snapshot
+  price         NUMERIC(10,2) NOT NULL CHECK (price >= 0),   -- snapshot
+  quantity      INTEGER       NOT NULL CHECK (quantity > 0),
+  created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (order_id);
+
+
