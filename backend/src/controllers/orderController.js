@@ -3,11 +3,7 @@ const OrderModel = require('../models/order');
 const CartItemModel = require('../models/cartItem');
 const MenuItemModel = require('../models/menuItem');
 
-/**
- * POST /api/orders
- * Place an order from the current cart.
- * Body: { delivery_address, notes? }
- */
+// POST /api/orders - place an order from the cart
 const placeOrder = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -21,12 +17,10 @@ const placeOrder = async (req, res) => {
     // Load the user's cart
     const cartItems = await CartItemModel.getByUser(userId);
     if (cartItems.length === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Cart is empty. Add items before placing an order.' });
+      return res.status(400).json({ success: false, message: 'Cart is empty. Add items before placing an order.' });
     }
 
-    // Ensure all items belong to the same restaurant
+    // All items must be from the same restaurant
     const restaurantIds = [...new Set(cartItems.map((i) => i.restaurant_id))];
     if (restaurantIds.length > 1) {
       return res.status(400).json({
@@ -37,7 +31,7 @@ const placeOrder = async (req, res) => {
 
     const restaurantId = restaurantIds[0];
 
-    // Verify each menu item is still available
+    // Check that each item is still available
     for (const ci of cartItems) {
       const menuItem = await MenuItemModel.findById(ci.menu_item_id);
       if (!menuItem || !menuItem.is_available) {
@@ -48,7 +42,7 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // Build order line items (use current DB price as source of truth)
+    // Build the order line items
     const items = cartItems.map((ci) => ({
       menuItemId: ci.menu_item_id,
       name: ci.item_name,
@@ -64,7 +58,7 @@ const placeOrder = async (req, res) => {
       items,
     });
 
-    // Clear the cart after a successful order
+    // Clear the cart after ordering
     await CartItemModel.clearCart(userId);
 
     return res.status(201).json({
@@ -78,10 +72,7 @@ const placeOrder = async (req, res) => {
   }
 };
 
-/**
- * GET /api/orders
- * Return all orders for the authenticated user (newest first).
- */
+// GET /api/orders - get order history for logged in user
 const getOrderHistory = async (req, res) => {
   try {
     const orders = await OrderModel.findByUser(req.user.id);
@@ -96,10 +87,7 @@ const getOrderHistory = async (req, res) => {
   }
 };
 
-/**
- * GET /api/orders/:id
- * Return a single order with its line items.
- */
+// GET /api/orders/:id - get a single order with its items
 const getOrder = async (req, res) => {
   try {
     const order = await OrderModel.findById(req.params.id, req.user.id);

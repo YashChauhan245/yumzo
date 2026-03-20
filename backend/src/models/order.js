@@ -1,8 +1,6 @@
 const { query } = require('../config/db');
 
-/**
- * Create the orders and order_items tables if they don't already exist.
- */
+// Create orders and order_items tables on first run
 const createOrderTables = async () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS orders (
@@ -38,20 +36,12 @@ const createOrderTables = async () => {
   await query(sql);
 };
 
-/**
- * Create an order together with its line items inside a single transaction.
- * @param {{
- *   userId: string,
- *   restaurantId: string,
- *   deliveryAddress: string,
- *   notes?: string,
- *   items: Array<{ menuItemId: string, name: string, price: number, quantity: number }>
- * }} data
- */
+// Create an order and its line items
+// Note: not using a real DB transaction here — this is a simplified version for a student project
 const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null, items }) => {
   const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  // ── Insert the order ───────────────────────────────────────────────────────
+  // Insert the order
   const { rows: orderRows } = await query(
     `INSERT INTO orders (user_id, restaurant_id, total_amount, delivery_address, notes)
      VALUES ($1, $2, $3, $4, $5)
@@ -60,7 +50,7 @@ const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null
   );
   const order = orderRows[0];
 
-  // ── Insert each line item ──────────────────────────────────────────────────
+  // Insert each line item
   const insertedItems = [];
   for (const item of items) {
     const { rows } = await query(
@@ -75,10 +65,7 @@ const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null
   return { ...order, items: insertedItems };
 };
 
-/**
- * Return all orders for a user, newest first (without line items).
- * @param {string} userId  UUID
- */
+// Get all orders for a user (newest first)
 const findByUser = async (userId) => {
   const sql = `
     SELECT
@@ -95,11 +82,7 @@ const findByUser = async (userId) => {
   return rows;
 };
 
-/**
- * Return a single order with its line items.
- * @param {string} orderId  UUID
- * @param {string} userId   UUID — ensures users can only see their own orders
- */
+// Get a single order with its line items (only returns if it belongs to the user)
 const findById = async (orderId, userId) => {
   const { rows: orderRows } = await query(
     `SELECT
@@ -127,11 +110,7 @@ const findById = async (orderId, userId) => {
   return { ...orderRows[0], items: itemRows };
 };
 
-/**
- * Update the status of an order.
- * @param {string} orderId  UUID
- * @param {string} status   New status
- */
+// Update the status of an order (e.g. pending -> confirmed after payment)
 const updateStatus = async (orderId, status) => {
   const { rows } = await query(
     `UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,

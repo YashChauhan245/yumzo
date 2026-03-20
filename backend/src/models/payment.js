@@ -1,8 +1,6 @@
 const { query } = require('../config/db');
 
-/**
- * Create the payments table if it doesn't already exist.
- */
+// Create payments table on first run
 const createPaymentsTable = async () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS payments (
@@ -27,18 +25,7 @@ const createPaymentsTable = async () => {
   await query(sql);
 };
 
-/**
- * Insert a payment record and return it.
- * @param {{
- *   orderId: string,
- *   userId: string,
- *   amount: number,
- *   paymentMethod: string,
- *   paymentStatus: 'success' | 'failed' | 'pending',
- *   transactionId?: string | null,
- *   failureReason?: string | null
- * }} data
- */
+// Save a payment record
 const create = async ({
   orderId,
   userId,
@@ -58,10 +45,7 @@ const create = async ({
   return rows[0];
 };
 
-/**
- * Return the payment record for a given order id.
- * @param {string} orderId  UUID
- */
+// Get the latest payment for a given order
 const findByOrderId = async (orderId) => {
   const { rows } = await query(
     `SELECT * FROM payments WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1`,
@@ -70,10 +54,7 @@ const findByOrderId = async (orderId) => {
   return rows[0] || null;
 };
 
-/**
- * Return all payment records for a given user (newest first).
- * @param {string} userId  UUID
- */
+// Get all payments for a user
 const findByUser = async (userId) => {
   const { rows } = await query(
     `SELECT p.*, o.status AS order_status

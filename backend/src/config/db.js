@@ -1,25 +1,17 @@
 const { Pool } = require('pg');
 
+// Create a connection pool using the DATABASE_URL from .env
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  // Supabase / hosted Postgres needs SSL in production
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected PostgreSQL pool error:', err);
+  console.error('Unexpected database error:', err);
 });
 
-/**
- * Execute a parameterised query.
- * @param {string} text   - SQL statement
- * @param {Array}  params - Bound parameter values
- */
+// Helper to run a SQL query
 const query = (text, params) => pool.query(text, params);
 
 module.exports = { query, pool };

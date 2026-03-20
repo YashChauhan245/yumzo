@@ -3,12 +3,7 @@ const { validationResult } = require('express-validator');
 const UserModel = require('../models/user');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
-const BCRYPT_SALT_ROUNDS = 12;
-
-/**
- * POST /api/auth/signup
- * Register a new user account.
- */
+// POST /api/auth/signup
 const signup = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -18,14 +13,13 @@ const signup = async (req, res) => {
   const { name, email, password, phone, role } = req.body;
 
   try {
+    // Check if email is already registered
     const existing = await UserModel.findByEmail(email);
     if (existing) {
-      return res
-        .status(409)
-        .json({ success: false, message: 'Email is already registered' });
+      return res.status(409).json({ success: false, message: 'Email is already registered' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await UserModel.create({
       name,
@@ -42,11 +36,7 @@ const signup = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Account created successfully',
-      data: {
-        user,
-        accessToken,
-        refreshToken,
-      },
+      data: { user, accessToken, refreshToken },
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -54,10 +44,7 @@ const signup = async (req, res) => {
   }
 };
 
-/**
- * POST /api/auth/login
- * Authenticate an existing user.
- */
+// POST /api/auth/login
 const login = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -69,39 +56,29 @@ const login = async (req, res) => {
   try {
     const user = await UserModel.findByEmail(email);
     if (!user) {
-      return res
-        .status(401)
-        .json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     if (!user.is_active) {
-      return res
-        .status(403)
-        .json({ success: false, message: 'Account is deactivated. Contact support.' });
+      return res.status(403).json({ success: false, message: 'Account is deactivated. Contact support.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
     const tokenPayload = { id: user.id, email: user.email, role: user.role };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
-    // Return public user data (omit password hash)
+    // Don't send the password hash in the response
     const { password: _pw, ...publicUser } = user;
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: {
-        user: publicUser,
-        accessToken,
-        refreshToken,
-      },
+      data: { user: publicUser, accessToken, refreshToken },
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -109,11 +86,7 @@ const login = async (req, res) => {
   }
 };
 
-/**
- * GET /api/auth/me
- * Return the currently authenticated user's profile.
- * Requires the `authenticate` middleware to have run first.
- */
+// GET /api/auth/me - get logged in user's profile
 const getMe = async (req, res) => {
   try {
     const user = await UserModel.findById(req.user.id);

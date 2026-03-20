@@ -1,26 +1,15 @@
-/**
- * Mock payment gateway service.
- *
- * Rules (deterministic, no randomness):
- *   - payment_method 'cash_on_delivery'  → always succeeds
- *   - card number / UPI ID starting with 'fail_' → always fails
- *   - everything else                    → always succeeds
- *
- * In a real app this module would call Razorpay / Stripe / etc.
- */
+// Mock payment gateway — simulates card, UPI, and cash on delivery payments
+// In a real app, this would call Razorpay, Stripe, or similar
 
-const SUPPORTED_METHODS = ['card', 'upi', 'cash_on_delivery'];
+// Rules:
+// - cash_on_delivery always succeeds
+// - payment_details starting with 'fail_' always fails (for testing)
+// - everything else succeeds
 
-/**
- * Simulate a payment attempt.
- * @param {{
- *   paymentMethod: 'card' | 'upi' | 'cash_on_delivery',
- *   paymentDetails?: string   // card number or UPI id (optional, treated as opaque)
- * }} options
- * @returns {{ success: boolean, transactionId: string | null, failureReason: string | null }}
- */
+const supportedMethods = ['card', 'upi', 'cash_on_delivery'];
+
 const processPayment = ({ paymentMethod, paymentDetails = '' }) => {
-  if (!SUPPORTED_METHODS.includes(paymentMethod)) {
+  if (!supportedMethods.includes(paymentMethod)) {
     return {
       success: false,
       transactionId: null,
@@ -37,7 +26,7 @@ const processPayment = ({ paymentMethod, paymentDetails = '' }) => {
     };
   }
 
-  // Any detail prefixed with 'fail_' simulates a declined payment
+  // Simulate a failed payment (useful for testing)
   if (typeof paymentDetails === 'string' && paymentDetails.startsWith('fail_')) {
     return {
       success: false,
@@ -46,7 +35,7 @@ const processPayment = ({ paymentMethod, paymentDetails = '' }) => {
     };
   }
 
-  // Default: success
+  // All other payments succeed
   return {
     success: true,
     transactionId: 'txn_' + Date.now() + '_mock',
@@ -54,4 +43,4 @@ const processPayment = ({ paymentMethod, paymentDetails = '' }) => {
   };
 };
 
-module.exports = { processPayment, SUPPORTED_METHODS };
+module.exports = { processPayment };

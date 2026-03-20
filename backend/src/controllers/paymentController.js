@@ -3,16 +3,8 @@ const OrderModel = require('../models/order');
 const PaymentModel = require('../models/payment');
 const { processPayment } = require('../services/mockPaymentGateway');
 
-/**
- * POST /api/payments/:orderId
- * Process a (mock) payment for an order.
- * Body: { payment_method, payment_details? }
- *
- * - Verifies the order belongs to the authenticated user and is still pending.
- * - Calls the mock gateway.
- * - Persists a payment record and updates the order status.
- */
-const initiatePayment = async (req, res) => {
+// POST /api/payments/:orderId - pay for an order
+const handlePayment = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).json({ success: false, errors: errors.array() });
@@ -23,11 +15,13 @@ const initiatePayment = async (req, res) => {
     const { payment_method, payment_details = '' } = req.body;
     const userId = req.user.id;
 
-    // Load and authorise the order
+    // Make sure the order exists and belongs to this user
     const order = await OrderModel.findById(orderId, userId);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
+
+    // Only pending orders can be paid
     if (order.status !== 'pending') {
       return res.status(400).json({
         success: false,
@@ -35,7 +29,7 @@ const initiatePayment = async (req, res) => {
       });
     }
 
-    // Check for an existing successful payment (idempotency guard)
+    // Don't process payment if it was already paid successfully
     const existingPayment = await PaymentModel.findByOrderId(orderId);
     if (existingPayment && existingPayment.payment_status === 'success') {
       return res.status(400).json({
@@ -44,16 +38,15 @@ const initiatePayment = async (req, res) => {
       });
     }
 
-    // ── Call the mock gateway ──────────────────────────────────────────────────
+    // Call the mock payment gateway
     const gatewayResult = processPayment({
       paymentMethod: payment_method,
       paymentDetails: payment_details,
     });
 
     const paymentStatus = gatewayResult.success ? 'success' : 'failed';
-    const newOrderStatus = gatewayResult.success ? 'confirmed' : 'pending';
 
-    // ── Persist payment record ─────────────────────────────────────────────────
+    // Save the payment record
     const payment = await PaymentModel.create({
       orderId,
       userId,
@@ -64,9 +57,9 @@ const initiatePayment = async (req, res) => {
       failureReason: gatewayResult.failureReason,
     });
 
-    // ── Update order status ────────────────────────────────────────────────────
+    // Update order status to confirmed if payment succeeded
     if (gatewayResult.success) {
-      await OrderModel.updateStatus(orderId, newOrderStatus);
+      await OrderModel.updateStatus(orderId, 'confirmed');
     }
 
     const statusCode = gatewayResult.success ? 200 : 402;
@@ -76,21 +69,18 @@ const initiatePayment = async (req, res) => {
       data: { payment },
     });
   } catch (err) {
-    console.error('initiatePayment error:', err);
+    console.error('handlePayment error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
-/**
- * GET /api/payments/:orderId
- * Return the payment record for an order (owner only).
- */
+// GET /api/payments/:orderId - get payment status for an order
 const getPaymentStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.user.id;
 
-    // Authorise: verify the order belongs to this user
+    // Verify the order belongs to this user
     const order = await OrderModel.findById(orderId, userId);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -98,9 +88,7 @@ const getPaymentStatus = async (req, res) => {
 
     const payment = await PaymentModel.findByOrderId(orderId);
     if (!payment) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'No payment found for this order' });
+      return res.status(404).json({ success: false, message: 'No payment found for this order' });
     }
 
     return res.status(200).json({ success: true, data: { payment } });
@@ -110,4 +98,4 @@ const getPaymentStatus = async (req, res) => {
   }
 };
 
-module.exports = { initiatePayment, getPaymentStatus };
+module.exports = { handlePayment, getPaymentStatus };

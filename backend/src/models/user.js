@@ -1,8 +1,6 @@
 const { query } = require('../config/db');
 
-/**
- * Create the users table if it doesn't already exist.
- */
+// Create users table on first run
 const createUsersTable = async () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS users (
@@ -24,21 +22,13 @@ const createUsersTable = async () => {
   await query(sql);
 };
 
-/**
- * Find a user by their email address.
- * @param {string} email
- */
+// Find a user by email
 const findByEmail = async (email) => {
-  const { rows } = await query('SELECT * FROM users WHERE email = $1 LIMIT 1', [
-    email,
-  ]);
+  const { rows } = await query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
   return rows[0] || null;
 };
 
-/**
- * Find a user by their primary-key id.
- * @param {string} id  UUID
- */
+// Find a user by id (returns public fields only, no password)
 const findById = async (id) => {
   const { rows } = await query(
     'SELECT id, name, email, phone, role, avatar_url, is_active, created_at FROM users WHERE id = $1 LIMIT 1',
@@ -47,10 +37,7 @@ const findById = async (id) => {
   return rows[0] || null;
 };
 
-/**
- * Insert a new user row and return the public fields (no password).
- * @param {{ name, email, password, phone, role }} data
- */
+// Create a new user and return their public info
 const create = async ({ name, email, password, phone = null, role = 'customer' }) => {
   const { rows } = await query(
     `INSERT INTO users (name, email, password, phone, role)

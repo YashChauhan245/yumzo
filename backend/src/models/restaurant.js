@@ -1,8 +1,6 @@
 const { query } = require('../config/db');
 
-/**
- * Create the restaurants table if it doesn't already exist.
- */
+// Create restaurants table on first run
 const createRestaurantsTable = async () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS restaurants (
@@ -29,11 +27,7 @@ const createRestaurantsTable = async () => {
   await query(sql);
 };
 
-/**
- * Return all active restaurants, newest first.
- * Supports optional filtering by city and/or cuisine_type.
- * @param {{ city?: string, cuisine?: string }} filters
- */
+// Get all active restaurants, with optional city and cuisine filters
 const findAll = async ({ city, cuisine } = {}) => {
   const conditions = ['r.is_active = TRUE'];
   const params = [];
@@ -63,10 +57,7 @@ const findAll = async ({ city, cuisine } = {}) => {
   return rows;
 };
 
-/**
- * Find a single restaurant by its primary-key id.
- * @param {string} id  UUID
- */
+// Find a restaurant by id
 const findById = async (id) => {
   const sql = `
     SELECT
@@ -83,10 +74,7 @@ const findById = async (id) => {
   return rows[0] || null;
 };
 
-/**
- * Insert a new restaurant row and return it.
- * @param {{ owner_id, name, description, cuisine_type, address, city, phone, image_url }} data
- */
+// Add a new restaurant
 const create = async ({
   owner_id = null,
   name,

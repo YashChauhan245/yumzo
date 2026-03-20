@@ -1,8 +1,6 @@
 const { query } = require('../config/db');
 
-/**
- * Create the cart_items table if it doesn't already exist.
- */
+// Create cart_items table on first run
 const createCartItemsTable = async () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS cart_items (
@@ -21,10 +19,7 @@ const createCartItemsTable = async () => {
   await query(sql);
 };
 
-/**
- * Return all cart items for a user, joined with menu_item details.
- * @param {string} userId  UUID
- */
+// Get all cart items for a user, joined with menu item and restaurant details
 const getByUser = async (userId) => {
   const sql = `
     SELECT
@@ -48,10 +43,7 @@ const getByUser = async (userId) => {
   return rows;
 };
 
-/**
- * Add an item to the cart or increment its quantity if it already exists.
- * @param {{ userId, menuItemId, restaurantId, quantity }} data
- */
+// Add item to cart. If item already exists, increment quantity instead
 const upsertItem = async ({ userId, menuItemId, restaurantId, quantity = 1 }) => {
   const sql = `
     INSERT INTO cart_items (user_id, menu_item_id, restaurant_id, quantity)
@@ -66,12 +58,7 @@ const upsertItem = async ({ userId, menuItemId, restaurantId, quantity = 1 }) =>
   return rows[0];
 };
 
-/**
- * Set the quantity of a cart item. Caller must ensure the item belongs to userId.
- * @param {string} cartItemId  UUID
- * @param {string} userId      UUID
- * @param {number} quantity    New quantity (> 0)
- */
+// Update quantity of a specific cart item (user_id check prevents editing others' carts)
 const updateQuantity = async (cartItemId, userId, quantity) => {
   const { rows } = await query(
     `UPDATE cart_items
@@ -83,11 +70,7 @@ const updateQuantity = async (cartItemId, userId, quantity) => {
   return rows[0] || null;
 };
 
-/**
- * Remove one item from the cart. Returns the deleted row or null.
- * @param {string} cartItemId  UUID
- * @param {string} userId      UUID
- */
+// Remove a single item from the cart
 const removeItem = async (cartItemId, userId) => {
   const { rows } = await query(
     `DELETE FROM cart_items WHERE id = $1 AND user_id = $2 RETURNING *`,
@@ -96,10 +79,7 @@ const removeItem = async (cartItemId, userId) => {
   return rows[0] || null;
 };
 
-/**
- * Remove all cart items for a user.
- * @param {string} userId  UUID
- */
+// Remove all cart items for a user
 const clearCart = async (userId) => {
   await query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
 };

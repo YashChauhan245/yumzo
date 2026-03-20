@@ -1,8 +1,6 @@
 const { query } = require('../config/db');
 
-/**
- * Create the menu_items table if it doesn't already exist.
- */
+// Create menu_items table on first run
 const createMenuItemsTable = async () => {
   const sql = `
     CREATE TABLE IF NOT EXISTS menu_items (
@@ -26,11 +24,7 @@ const createMenuItemsTable = async () => {
   await query(sql);
 };
 
-/**
- * Return all available menu items for a restaurant, grouped by category.
- * @param {string} restaurantId  UUID
- * @param {{ category?: string, is_veg?: boolean }} filters
- */
+// Get all available menu items for a restaurant, with optional filters
 const findByRestaurant = async (restaurantId, { category, is_veg } = {}) => {
   const conditions = ['restaurant_id = $1', 'is_available = TRUE'];
   const params = [restaurantId];
@@ -56,10 +50,7 @@ const findByRestaurant = async (restaurantId, { category, is_veg } = {}) => {
   return rows;
 };
 
-/**
- * Find a single menu item by id.
- * @param {string} id  UUID
- */
+// Find a single menu item by id
 const findById = async (id) => {
   const { rows } = await query(
     `SELECT id, restaurant_id, name, description, price, category,
@@ -70,10 +61,7 @@ const findById = async (id) => {
   return rows[0] || null;
 };
 
-/**
- * Insert a new menu item and return it.
- * @param {{ restaurant_id, name, description, price, category, image_url, is_veg }} data
- */
+// Add a new menu item
 const create = async ({
   restaurant_id,
   name,

@@ -2,18 +2,13 @@ const { validationResult } = require('express-validator');
 const CartItemModel = require('../models/cartItem');
 const MenuItemModel = require('../models/menuItem');
 
-/**
- * GET /api/cart
- * Return the authenticated user's cart with item details.
- */
+// GET /api/cart - get the logged in user's cart
 const getCart = async (req, res) => {
   try {
     const items = await CartItemModel.getByUser(req.user.id);
 
-    const totalAmount = items.reduce(
-      (sum, i) => sum + parseFloat(i.price) * i.quantity,
-      0,
-    );
+    // Calculate total price
+    const totalAmount = items.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
 
     return res.status(200).json({
       success: true,
@@ -29,11 +24,7 @@ const getCart = async (req, res) => {
   }
 };
 
-/**
- * POST /api/cart
- * Add a menu item to the cart (or increment quantity).
- * Body: { menu_item_id, quantity? }
- */
+// POST /api/cart - add item to cart (or increment quantity if already there)
 const addToCart = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -43,15 +34,13 @@ const addToCart = async (req, res) => {
   try {
     const { menu_item_id, quantity = 1 } = req.body;
 
-    // Verify menu item exists and is available
+    // Check the menu item exists and is available
     const menuItem = await MenuItemModel.findById(menu_item_id);
     if (!menuItem) {
       return res.status(404).json({ success: false, message: 'Menu item not found' });
     }
     if (!menuItem.is_available) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Menu item is currently unavailable' });
+      return res.status(400).json({ success: false, message: 'Menu item is currently unavailable' });
     }
 
     const cartItem = await CartItemModel.upsertItem({
@@ -72,11 +61,7 @@ const addToCart = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/cart/:itemId
- * Update the quantity of a cart item.
- * Body: { quantity }
- */
+// PUT /api/cart/:itemId - update quantity of a cart item
 const updateQuantity = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -102,10 +87,7 @@ const updateQuantity = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/cart/:itemId
- * Remove a single item from the cart.
- */
+// DELETE /api/cart/:itemId - remove a single item from cart
 const removeItem = async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -122,10 +104,7 @@ const removeItem = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/cart
- * Clear all items from the authenticated user's cart.
- */
+// DELETE /api/cart - clear the entire cart
 const clearCart = async (req, res) => {
   try {
     await CartItemModel.clearCart(req.user.id);
