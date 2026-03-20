@@ -1,4 +1,4 @@
-const { query } = require('../config/db');
+const { query, pool } = require('../config/db');
 
 // Create orders and order_items tables on first run
 const createOrderTables = async () => {
@@ -36,33 +36,49 @@ const createOrderTables = async () => {
   await query(sql);
 };
 
-// Create an order and its line items
-// Note: not using a real DB transaction here — this is a simplified version for a student project
+// Create an order and all its line items inside a single DB transaction.
+// If anything fails, the whole thing is rolled back so we never have a
+// partial order (order row exists but items didn't insert).
 const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null, items }) => {
   const totalAmount = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  // Insert the order
-  const { rows: orderRows } = await query(
-    `INSERT INTO orders (user_id, restaurant_id, total_amount, delivery_address, notes)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING *`,
-    [userId, restaurantId, totalAmount.toFixed(2), deliveryAddress, notes],
-  );
-  const order = orderRows[0];
+  // Get a dedicated client from the pool so we can run BEGIN / COMMIT
+  const client = await pool.connect();
 
-  // Insert each line item
-  const insertedItems = [];
-  for (const item of items) {
-    const { rows } = await query(
-      `INSERT INTO order_items (order_id, menu_item_id, name, price, quantity)
+  try {
+    await client.query('BEGIN');
+
+    // Insert the order row
+    const { rows: orderRows } = await client.query(
+      `INSERT INTO orders (user_id, restaurant_id, total_amount, delivery_address, notes)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [order.id, item.menuItemId, item.name, item.price, item.quantity],
+      [userId, restaurantId, totalAmount.toFixed(2), deliveryAddress, notes],
     );
-    insertedItems.push(rows[0]);
-  }
+    const order = orderRows[0];
 
-  return { ...order, items: insertedItems };
+    // Insert each line item
+    const insertedItems = [];
+    for (const item of items) {
+      const { rows } = await client.query(
+        `INSERT INTO order_items (order_id, menu_item_id, name, price, quantity)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [order.id, item.menuItemId, item.name, item.price, item.quantity],
+      );
+      insertedItems.push(rows[0]);
+    }
+
+    await client.query('COMMIT');
+    return { ...order, items: insertedItems };
+  } catch (err) {
+    // Something went wrong — roll back so no partial data is saved
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    // Always release the client back to the pool
+    client.release();
+  }
 };
 
 // Get all orders for a user (newest first)
