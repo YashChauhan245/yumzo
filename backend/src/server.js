@@ -6,7 +6,10 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
+const restaurantRoutes = require('./routes/restaurants');
 const { createUsersTable } = require('./models/user');
+const { createRestaurantsTable } = require('./models/restaurant');
+const { createMenuItemsTable } = require('./models/menuItem');
 
 const app = express();
 
@@ -56,6 +59,7 @@ app.get('/health', (_req, res) =>
 
 // ── API routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/restaurants', restaurantRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req, res) =>
@@ -76,6 +80,8 @@ const start = async () => {
   try {
     if (process.env.DATABASE_URL) {
       await createUsersTable();
+      await createRestaurantsTable();
+      await createMenuItemsTable();
       console.log('✅ Database tables ensured');
     } else {
       console.warn('⚠️  DATABASE_URL not set – skipping DB initialisation');
