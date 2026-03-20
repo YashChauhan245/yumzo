@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator');
 const OrderModel = require('../models/order');
 const CartItemModel = require('../models/cartItem');
 const MenuItemModel = require('../models/menuItem');
+const { emitOrderUpdate } = require('../config/socket');
 
 // POST /api/orders - place an order from the cart
 const placeOrder = async (req, res) => {
@@ -56,6 +57,14 @@ const placeOrder = async (req, res) => {
       deliveryAddress: delivery_address,
       notes,
       items,
+    });
+
+    emitOrderUpdate({
+      id: order.id,
+      user_id: order.user_id,
+      restaurant_id: order.restaurant_id,
+      status: order.status,
+      created_at: order.created_at,
     });
 
     // Clear the cart after ordering

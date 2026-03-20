@@ -31,7 +31,7 @@ const signupValidation = [
 
   body('role')
     .optional()
-    .isIn(['customer', 'restaurant_owner', 'delivery_agent'])
+    .isIn(['customer', 'restaurant_owner', 'delivery_agent', 'driver'])
     .withMessage('Invalid role'),
 ];
 

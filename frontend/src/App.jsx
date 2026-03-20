@@ -4,7 +4,10 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/auth/Login';
 import Signup from './components/auth/Signup';
-import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
+import Restaurant from './pages/Restaurant';
+import Cart from './pages/Cart';
+import Orders from './pages/Orders';
 
 function App() {
   return (
@@ -14,7 +17,18 @@ function App() {
           position="top-right"
           toastOptions={{
             duration: 4000,
-            style: { borderRadius: '10px', fontSize: '14px' },
+            className: 'yumzo-toast',
+            style: {
+              borderRadius: '14px',
+              fontSize: '14px',
+              padding: '12px 14px',
+            },
+            success: {
+              style: { borderLeft: '4px solid #16a34a' },
+            },
+            error: {
+              style: { borderLeft: '4px solid #ef4444' },
+            },
           }}
         />
         <Routes>
@@ -24,16 +38,40 @@ function App() {
 
           {/* Protected routes */}
           <Route
-            path="/dashboard"
+            path="/"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/restaurants/:id"
+            element={
+              <ProtectedRoute>
+                <Restaurant />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <Orders />
               </ProtectedRoute>
             }
           />
 
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>

@@ -1,7 +1,11 @@
 const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const UserModel = require('../models/user');
+const prismaAuthService = require('../services/prismaAuthService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
+
+const usePrisma = process.env.USE_PRISMA === 'true';
+const authService = usePrisma ? prismaAuthService : UserModel;
 
 // POST /api/auth/signup
 const signup = async (req, res) => {
@@ -11,22 +15,23 @@ const signup = async (req, res) => {
   }
 
   const { name, email, password, phone, role } = req.body;
+  const normalizedRole = role === 'driver' ? 'delivery_agent' : role;
 
   try {
     // Check if email is already registered
-    const existing = await UserModel.findByEmail(email);
+    const existing = await authService.findByEmail(email);
     if (existing) {
       return res.status(409).json({ success: false, message: 'Email is already registered' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await UserModel.create({
+    const user = await authService.create({
       name,
       email,
       password: hashedPassword,
       phone: phone || null,
-      role: role || 'customer',
+      role: normalizedRole || 'customer',
     });
 
     const tokenPayload = { id: user.id, email: user.email, role: user.role };
@@ -54,7 +59,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await UserModel.findByEmail(email);
+    const user = await authService.findByEmail(email);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
@@ -89,7 +94,7 @@ const login = async (req, res) => {
 // GET /api/auth/me - get logged in user's profile
 const getMe = async (req, res) => {
   try {
-    const user = await UserModel.findById(req.user.id);
+    const user = await authService.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }

@@ -1,17 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { gsap } from 'gsap';
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || '/';
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    gsap.fromTo(
+      containerRef.current,
+      { y: 20, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.45, ease: 'power2.out' },
+    );
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -50,25 +61,28 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
+      <div className="absolute -right-28 -top-20 h-80 w-80 rounded-full bg-orange-200/70 blur-3xl" />
+      <div className="absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-amber-200/70 blur-3xl" />
+      <div ref={containerRef} className="relative w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-orange-500">🍔 Yumzo</h1>
-          <p className="text-gray-500 mt-2">Delicious food, delivered fast</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-black tracking-tight text-orange-600">Yumzo</h1>
+          <p className="mt-2 text-slate-500">Fast delivery. Real-time order flow. Startup-level experience.</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+        <div className="glass-card rounded-3xl p-8 shadow-2xl shadow-slate-300/40">
+          <h2 className="mb-2 text-2xl font-semibold text-slate-900">
             Welcome back
           </h2>
+          <p className="mb-6 text-sm text-slate-500">Sign in to continue ordering from your favorite places.</p>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {/* Email */}
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="mb-1 block text-sm font-medium text-slate-700"
               >
                 Email address
               </label>
@@ -80,8 +94,8 @@ const Login = () => {
                 value={form.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400 transition ${
-                  errors.email ? 'border-red-400' : 'border-gray-300'
+                className={`w-full rounded-xl border px-4 py-3 text-slate-800 outline-none ring-orange-300 transition focus:ring-2 ${
+                  errors.email ? 'border-red-400' : 'border-slate-300'
                 }`}
               />
               {errors.email && (
@@ -93,7 +107,7 @@ const Login = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="mb-1 block text-sm font-medium text-slate-700"
               >
                 Password
               </label>
@@ -105,8 +119,8 @@ const Login = () => {
                 value={form.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full px-4 py-2.5 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400 transition ${
-                  errors.password ? 'border-red-400' : 'border-gray-300'
+                className={`w-full rounded-xl border px-4 py-3 text-slate-800 outline-none ring-orange-300 transition focus:ring-2 ${
+                  errors.password ? 'border-red-400' : 'border-slate-300'
                 }`}
               />
               {errors.password && (
@@ -118,17 +132,17 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors"
+              className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-orange-500 disabled:opacity-60"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-slate-500">
             Don&apos;t have an account?{' '}
             <Link
               to="/signup"
-              className="text-orange-500 font-medium hover:underline"
+              className="font-medium text-orange-600 hover:underline"
             >
               Sign up
             </Link>

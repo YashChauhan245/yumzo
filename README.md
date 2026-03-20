@@ -1,146 +1,105 @@
-# 🍔 Yumzo — Food Delivery App
+# Yumzo - Full Stack Food Delivery App
 
-A full-stack food delivery application (like Zomato), built with Node.js, Express, PostgreSQL, React and Tailwind CSS.
+Yumzo is a beginner-friendly full stack food delivery project with:
 
-## Phase 1: Authentication System ✅
+- Backend: Node.js, Express, PostgreSQL (Supabase), JWT auth
+- Frontend: React (Vite), Tailwind CSS, Axios, protected routes
 
-### Tech Stack
-| Layer     | Technology                          |
-|-----------|-------------------------------------|
-| Backend   | Node.js · Express · PostgreSQL/Supabase |
-| Auth      | JWT (access + refresh tokens) · bcrypt |
-| Validation| express-validator · Helmet · CORS   |
-| Frontend  | React · Vite · Tailwind CSS v4      |
-| HTTP      | Axios                               |
+## Project structure
 
----
+- `backend/` - REST API, DB models, JWT middleware, tests
+- `frontend/` - React app with auth pages and dashboard
 
-## Backend
+## 1) Backend setup
 
-### Folder Structure
-```
-backend/
-├── src/
-│   ├── config/
-│   │   └── db.js              # PostgreSQL pool (pg)
-│   ├── controllers/
-│   │   └── authController.js  # signup / login / getMe
-│   ├── db/
-│   │   └── schema.sql         # Database DDL
-│   ├── middleware/
-│   │   ├── auth.js            # JWT authenticate & authorize
-│   │   └── validate.js        # express-validator rules
-│   ├── models/
-│   │   └── user.js            # SQL queries (no ORM)
-│   ├── routes/
-│   │   └── auth.js            # Auth router
-│   └── server.js              # Express app entry point
-├── tests/
-│   ├── auth.test.js           # Integration tests (supertest)
-│   └── jwt.test.js            # Unit tests
-├── .env.example
-└── package.json
+1. Open terminal in `backend/`
+2. Install dependencies:
+
+```bash
+npm install
 ```
 
-### API Endpoints
+1. Create `backend/.env` from `backend/.env.example`
+2. Fill required values:
 
-| Method | Endpoint         | Auth | Description            |
-|--------|-----------------|------|------------------------|
-| POST   | /api/auth/signup | ❌  | Register a new user    |
-| POST   | /api/auth/login  | ❌  | Login with credentials |
-| GET    | /api/auth/me     | ✅  | Get current user       |
-| GET    | /health          | ❌  | Health check           |
-
-### Signup request body
-```json
-{
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "password": "SecurePass1",
-  "phone": "+919876543210"
-}
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
+JWT_SECRET=your_super_secret_jwt_key
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=your_refresh_secret_key
+JWT_REFRESH_EXPIRES_IN=30d
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
-### Login request body
-```json
-{
-  "email": "jane@example.com",
-  "password": "SecurePass1"
-}
+1. Start backend:
+
+```bash
+npm run dev
 ```
 
-### Success response shape
-```json
-{
-  "success": true,
-  "data": {
-    "user": { "id": "...", "name": "...", "email": "...", "role": "customer" },
-    "accessToken": "<jwt>",
-    "refreshToken": "<jwt>"
-  }
-}
+Backend health check: `http://localhost:5000/health`
+
+## 2) Frontend setup
+
+1. Open terminal in `frontend/`
+2. Install dependencies:
+
+```bash
+npm install
 ```
 
-### Setup
+1. Create `frontend/.env.local` from `frontend/.env.example`
+2. Set API URL:
 
-1. Copy `.env.example` → `.env` and fill in your values
-2. Run the schema: `psql $DATABASE_URL < src/db/schema.sql`
-3. Install dependencies: `npm install`
-4. Start dev server: `npm run dev`
-5. Run tests: `npm test`
-
----
-
-## Frontend
-
-### Folder Structure
-```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── auth/
-│   │   │   ├── Login.jsx      # Login form
-│   │   │   └── Signup.jsx     # Registration form
-│   │   └── ProtectedRoute.jsx # Auth guard
-│   ├── context/
-│   │   └── AuthContext.jsx    # Global auth state (React context)
-│   ├── pages/
-│   │   └── Dashboard.jsx      # Protected user dashboard
-│   ├── services/
-│   │   └── api.js             # Axios instance + auth API helpers
-│   ├── App.jsx                # Router & providers
-│   └── main.jsx
-├── .env.example
-└── package.json
+```env
+VITE_API_URL=http://localhost:5000/api
 ```
 
-### Setup
+1. Start frontend:
 
-1. Copy `.env.example` → `.env.local`
-2. `npm install`
-3. `npm run dev`
+```bash
+npm run dev
+```
 
-### Routes
-| Path         | Access    | Component  |
-|--------------|-----------|------------|
-| /login       | Public    | Login      |
-| /signup      | Public    | Signup     |
-| /dashboard   | Protected | Dashboard  |
+Frontend runs on `http://localhost:5173`
 
----
+## 3) Auth flow
 
-## Database Schema
+1. Signup from `/signup`
+2. Login from `/login`
+3. App stores JWT access token in localStorage
+4. Protected route (`/dashboard`) uses token + `/api/auth/me` verification
 
-See [`backend/src/db/schema.sql`](backend/src/db/schema.sql) for the full DDL.
+## Useful scripts
 
----
+Backend (`backend/package.json`):
 
-## Roadmap
+- `npm run dev` - start with nodemon
+- `npm run start` - start with node
+- `npm test` - run Jest test suite
 
-- [x] Phase 1 — Authentication (signup · login · JWT middleware)
-- [ ] Phase 2 — Restaurants & Menus
-- [ ] Phase 3 — Cart & Order Placement
-- [ ] Phase 4 — Order History & Tracking
-- [ ] Phase 5 — Ratings & Reviews
-- [ ] Phase 6 — Payment Integration (mock)
-- [ ] Phase 7 — Advanced (Reels · Fraud Detection · Recommendations)
+Frontend (`frontend/package.json`):
+
+- `npm run start` - start Vite dev server
+- `npm run dev` - start Vite dev server
+- `npm run build` - production build
+- `npm run preview` - preview production build
+- `npm run lint` - lint checks
+
+## API endpoints
+
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/auth/me` (protected)
+- `GET /api/restaurants`
+- `GET /api/restaurants/:id/menu`
+- `GET/POST/PUT/DELETE /api/cart` (protected)
+- `GET/POST /api/orders` (protected)
+- `GET/POST /api/payments/:orderId` (protected)
+
+## Notes
+
+- If JWT secrets are missing in local development, backend now uses safe fallback secrets to avoid startup/signup crashes.
+- For production, always set strong JWT secrets explicitly.

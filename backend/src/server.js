@@ -1,15 +1,20 @@
 require('dotenv').config();
 
 const express = require('express');
+const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
 const restaurantRoutes = require('./routes/restaurants');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
+const uploadRoutes = require('./routes/uploads');
+const { setSocketServer } = require('./config/socket');
 const { createUsersTable } = require('./models/user');
 const { createRestaurantsTable } = require('./models/restaurant');
 const { createMenuItemsTable } = require('./models/menuItem');
@@ -28,11 +33,28 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map((o) => o.trim())
   .filter(Boolean);
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+const isLocalhostOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return ['localhost', '127.0.0.1'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, Postman)
       if (!origin) return callback(null, true);
+
+      // In local development, allow localhost ports like 5173 / 5174.
+      if (isDev && isLocalhostOrigin(origin)) {
+        return callback(null, true);
+      }
+
       if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -47,6 +69,9 @@ app.use(
 // Body parsing
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Static uploads
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Rate limiting — skip in tests
 const globalLimiter = rateLimit({
@@ -69,6 +94,7 @@ app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // 404 handler
 app.use((_req, res) =>
@@ -99,7 +125,31 @@ const start = async () => {
       console.warn('⚠️  DATABASE_URL not set – skipping DB initialisation');
     }
 
-    app.listen(PORT, () => {
+    const httpServer = http.createServer(app);
+
+    const io = new Server(httpServer, {
+      cors: {
+        origin: (origin, callback) => {
+          if (!origin) return callback(null, true);
+          if (isDev && isLocalhostOrigin(origin)) return callback(null, true);
+          if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+          return callback(new Error(`Socket CORS policy: origin ${origin} is not allowed`));
+        },
+        credentials: true,
+      },
+    });
+
+    io.on('connection', (socket) => {
+      socket.on('order:subscribe', (orderId) => {
+        if (orderId) socket.join(`order:${orderId}`);
+      });
+    });
+
+    setSocketServer(io);
+
+    httpServer.listen(PORT, () => {
       console.log(`🚀 Yumzo API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
     });
   } catch (err) {

@@ -1,9 +1,16 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const isProd = process.env.NODE_ENV === 'production';
+
+const JWT_SECRET = process.env.JWT_SECRET || (!isProd ? 'dev_access_secret_change_me' : undefined);
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || (!isProd ? 'dev_refresh_secret_change_me' : undefined);
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+
+if (!isProd && (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET)) {
+  // Local-only fallback so first-time setup does not fail hard.
+  console.warn('JWT secrets not found in environment. Using development fallback secrets.');
+}
 
 // Generate a short-lived access token (used for API requests)
 const generateAccessToken = (payload) => {

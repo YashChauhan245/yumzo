@@ -44,4 +44,36 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
 };
 
+export const restaurantsAPI = {
+  getAll: (params = {}) => api.get('/restaurants', { params }),
+  getMenu: (restaurantId, params = {}) => api.get(`/restaurants/${restaurantId}/menu`, { params }),
+};
+
+export const cartAPI = {
+  getCart: () => api.get('/cart'),
+  addItem: (payload) => api.post('/cart', payload),
+  updateItem: (itemId, payload) => api.put(`/cart/${itemId}`, payload),
+  removeItem: (itemId) => api.delete(`/cart/${itemId}`),
+  clearCart: () => api.delete('/cart'),
+};
+
+export const ordersAPI = {
+  placeOrder: (payload) => api.post('/orders', payload),
+  getOrders: () => api.get('/orders'),
+  getOrder: (orderId) => api.get(`/orders/${orderId}`),
+};
+
+export const paymentsAPI = {
+  payOrder: (orderId, payload) => api.post(`/payments/${orderId}`, payload),
+  getPaymentStatus: (orderId) => api.get(`/payments/${orderId}`),
+};
+
+export const getApiErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {
+  const serverErrors = error?.response?.data?.errors;
+  if (Array.isArray(serverErrors) && serverErrors.length > 0) {
+    return serverErrors[0]?.msg || fallback;
+  }
+  return error?.response?.data?.message || fallback;
+};
+
 export default api;

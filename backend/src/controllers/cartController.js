@@ -1,11 +1,18 @@
 const { validationResult } = require('express-validator');
 const CartItemModel = require('../models/cartItem');
 const MenuItemModel = require('../models/menuItem');
+const prismaCartService = require('../services/prismaCartService');
+
+const usePrisma = process.env.USE_PRISMA === 'true';
+const cartService = usePrisma ? prismaCartService : CartItemModel;
+const menuService = usePrisma
+  ? { findById: prismaCartService.findMenuItemById }
+  : MenuItemModel;
 
 // GET /api/cart - get the logged in user's cart
 const getCart = async (req, res) => {
   try {
-    const items = await CartItemModel.getByUser(req.user.id);
+    const items = await cartService.getByUser(req.user.id);
 
     // Calculate total price
     const totalAmount = items.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
@@ -35,7 +42,7 @@ const addToCart = async (req, res) => {
     const { menu_item_id, quantity = 1 } = req.body;
 
     // Check the menu item exists and is available
-    const menuItem = await MenuItemModel.findById(menu_item_id);
+    const menuItem = await menuService.findById(menu_item_id);
     if (!menuItem) {
       return res.status(404).json({ success: false, message: 'Menu item not found' });
     }
@@ -43,7 +50,7 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Menu item is currently unavailable' });
     }
 
-    const cartItem = await CartItemModel.upsertItem({
+    const cartItem = await cartService.upsertItem({
       userId: req.user.id,
       menuItemId: menu_item_id,
       restaurantId: menuItem.restaurant_id,
@@ -71,7 +78,7 @@ const updateQuantity = async (req, res) => {
   try {
     const { itemId } = req.params;
     const { quantity } = req.body;
-    const updated = await CartItemModel.updateQuantity(itemId, req.user.id, quantity);
+    const updated = await cartService.updateQuantity(itemId, req.user.id, quantity);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Cart item not found' });
     }
@@ -91,7 +98,7 @@ const updateQuantity = async (req, res) => {
 const removeItem = async (req, res) => {
   try {
     const { itemId } = req.params;
-    const deleted = await CartItemModel.removeItem(itemId, req.user.id);
+    const deleted = await cartService.removeItem(itemId, req.user.id);
 
     if (!deleted) {
       return res.status(404).json({ success: false, message: 'Cart item not found' });
@@ -107,7 +114,7 @@ const removeItem = async (req, res) => {
 // DELETE /api/cart - clear the entire cart
 const clearCart = async (req, res) => {
   try {
-    await CartItemModel.clearCart(req.user.id);
+    await cartService.clearCart(req.user.id);
     return res.status(200).json({ success: true, message: 'Cart cleared' });
   } catch (err) {
     console.error('clearCart error:', err);
