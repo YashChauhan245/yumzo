@@ -8,6 +8,9 @@ import Home from './pages/Home';
 import Restaurant from './pages/Restaurant';
 import Cart from './pages/Cart';
 import Orders from './pages/Orders';
+import Dashboard from './pages/Dashboard';
+import DashboardPreview from './pages/DashboardPreview';
+import FoodReels from './pages/FoodReels';
 
 function App() {
   return (
@@ -35,6 +38,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/dashboard-preview" element={<DashboardPreview />} />
 
           {/* Protected routes */}
           <Route
@@ -70,8 +74,24 @@ function App() {
             }
           />
 
+          <Route
+            path="/reels"
+            element={
+              <ProtectedRoute>
+                <FoodReels />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Default redirect */}
-          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>

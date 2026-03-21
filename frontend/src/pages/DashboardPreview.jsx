@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../context/AuthContext';
+/**
+ * DashboardPreview — Standalone preview (no auth required)
+ * Access at /dashboard-preview to see the full dashboard without logging in.
+ * Perfect for portfolio demos & screenshots.
+ */
+import { useState, useEffect } from 'react';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import StatsCards from '../components/dashboard/StatsCards';
@@ -9,8 +13,8 @@ import RecentOrders from '../components/dashboard/RecentOrders';
 import TopRestaurants from '../components/dashboard/TopRestaurants';
 import LiveDeliveryMap from '../components/dashboard/LiveDeliveryMap';
 
-const Dashboard = () => {
-  const { user } = useAuth();
+const DashboardPreview = () => {
+  const mockUser = { name: 'Yash Chauhan', role: 'admin', email: 'yash@yumzo.com' };
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
   const [theme, setTheme] = useState(localStorage.getItem('yumzo-theme') || 'dark');
@@ -18,7 +22,6 @@ const Dashboard = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('yumzo-theme', theme);
-    window.dispatchEvent(new Event('yumzo-theme-change'));
   }, [theme]);
 
   const toggleTheme = () => {
@@ -36,25 +39,21 @@ const Dashboard = () => {
 
       <div className={`dashboard-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <DashboardHeader
-          user={user}
+          user={mockUser}
           theme={theme}
           onToggleTheme={toggleTheme}
         />
 
         <div className="dashboard-content">
-          {/* Stats Cards */}
           <StatsCards />
 
-          {/* Charts Row */}
           <div className="charts-row">
             <RevenueChart />
             <OrdersDonut />
           </div>
 
-          {/* Recent Orders */}
           <RecentOrders />
 
-          {/* Bottom Row */}
           <div className="bottom-row">
             <TopRestaurants />
             <LiveDeliveryMap />
@@ -65,4 +64,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default DashboardPreview;
