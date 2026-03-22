@@ -30,8 +30,8 @@ const statsData = [
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
     ),
-    color: '#f97316',
-    bgGlow: 'rgba(249, 115, 22, 0.12)',
+    color: '#3A3A3A',
+    bgGlow: 'rgba(58, 58, 58, 0.16)',
     hasLiveDot: true,
     sparkline: [20, 35, 28, 45, 38, 55, 48, 60, 52, 68, 58, 72],
   },
@@ -65,8 +65,8 @@ const statsData = [
         <polyline points="12 6 12 12 16 14" />
       </svg>
     ),
-    color: '#f59e0b',
-    bgGlow: 'rgba(245, 158, 11, 0.12)',
+    color: '#4A4A4A',
+    bgGlow: 'rgba(74, 74, 74, 0.16)',
     sparkline: [50, 48, 45, 42, 40, 38, 35, 33, 30, 32, 28, 28],
   },
 ];

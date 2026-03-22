@@ -1,12 +1,12 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { handlePayment, getPaymentStatus } = require('../controllers/paymentController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireCustomer } = require('../middleware/auth');
 
 const router = express.Router();
 
 // All payment routes require authentication
-router.use(authenticate);
+router.use(authenticate, requireCustomer);
 
 // Validation for payment request
 const paymentValidation = [

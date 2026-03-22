@@ -1,5 +1,16 @@
 const prisma = require('../config/prisma');
 
+const baseUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  password: true,
+  phone: true,
+  role: true,
+  isActive: true,
+  createdAt: true,
+};
+
 const toPublicUser = (u) => ({
   id: u.id,
   name: u.name,
@@ -17,12 +28,18 @@ const toPrivateUser = (u) => ({
 });
 
 const findByEmail = async (email) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: baseUserSelect,
+  });
   return user ? toPrivateUser(user) : null;
 };
 
 const findById = async (id) => {
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: baseUserSelect,
+  });
   return user ? toPublicUser(user) : null;
 };
 
@@ -35,6 +52,7 @@ const create = async ({ name, email, password, phone = null, role = 'customer' }
       phone,
       role,
     },
+    select: baseUserSelect,
   });
   return toPublicUser(user);
 };

@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { gsap } from 'gsap';
-import toast from 'react-hot-toast';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
 import { RestaurantSkeleton } from '../components/ui/Skeletons';
-import { getApiErrorMessage, restaurantsAPI } from '../services/api';
+import { restaurantsAPI } from '../services/api';
 
 /* ─── Fallback restaurant data with images ───────── */
 const fallbackRestaurants = [
@@ -72,8 +70,6 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCuisine, setActiveCuisine] = useState('All');
-  const cardsRef = useRef(null);
-  const heroRef = useRef(null);
 
   const loadRestaurants = async () => {
     setLoading(true);
@@ -90,22 +86,6 @@ const Home = () => {
 
   useEffect(() => {
     loadRestaurants();
-  }, []);
-
-  useEffect(() => {
-    if (!loading && cardsRef.current) {
-      gsap.fromTo(
-        cardsRef.current.querySelectorAll('.restaurant-card'),
-        { y: 30, opacity: 0, scale: 0.96 },
-        { y: 0, opacity: 1, scale: 1, duration: 0.5, stagger: 0.07, ease: 'power3.out' },
-      );
-    }
-  }, [loading, restaurants, activeCuisine]);
-
-  useEffect(() => {
-    if (heroRef.current) {
-      gsap.fromTo(heroRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' });
-    }
   }, []);
 
   const filteredRestaurants = useMemo(() => {
@@ -126,76 +106,67 @@ const Home = () => {
 
   return (
     <AppLayout>
-      {/* ─── Hero Section ─── */}
-      <section ref={heroRef} className="hero-section relative overflow-hidden rounded-3xl px-8 py-12 text-white shadow-2xl md:px-14 md:py-16">
-        {/* Background elements */}
-        <div className="hero-bg-pattern"></div>
-        <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-orange-500/30 blur-3xl" />
-        <div className="absolute -bottom-20 -left-12 h-60 w-60 rounded-full bg-amber-400/20 blur-3xl" />
-        <div className="absolute right-20 top-20 h-20 w-20 rounded-full bg-orange-300/15 blur-2xl" />
-
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold backdrop-blur-sm">
-            <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
-            Live — 128 restaurants near you
+      <section className="hero-section rounded-2xl px-6 py-6 md:px-8 md:py-7">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1 text-xs font-medium text-[#A1A1AA]">
+            9 restaurants available nearby
           </div>
 
-          <h1 className="mt-5 text-4xl font-black tracking-tight leading-tight md:text-6xl md:max-w-3xl">
-            Discover <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">great food</span> near you
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white md:text-3xl">
+            Discover restaurants and order faster
           </h1>
-          <p className="mt-4 max-w-2xl text-base text-slate-300 leading-relaxed md:text-lg">
-            Browse 9+ restaurants, explore 54+ dishes, watch cooking reels, and get your favorites delivered in minutes.
+
+          <p className="mt-2 text-sm leading-relaxed text-[#A1A1AA] md:text-base">
+            Browse menus, filter by cuisine, and jump directly to checkout from a clean product-style dashboard.
           </p>
 
-          {/* Search */}
-          <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="relative flex-1 max-w-xl">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+          <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
               </svg>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search restaurants, cuisines, cities..."
-                className="w-full rounded-2xl border border-white/10 bg-white/10 py-4 pl-12 pr-4 text-sm outline-none ring-orange-400 placeholder:text-slate-400 focus:ring-2 backdrop-blur-sm"
+                className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#71717A] focus:border-[#3A3A3A]"
               />
             </div>
             <button
               onClick={loadRestaurants}
-              className="rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-4 text-sm font-bold text-white shadow-lg shadow-orange-500/30 transition-all hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98]"
+              className="rounded-xl bg-[#3A3A3A] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F]"
             >
-              Explore Now
+              Refresh
             </button>
           </div>
 
-          {/* Quick stats */}
-          <div className="mt-8 flex flex-wrap gap-6">
+          <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               { num: '9+', label: 'Restaurants' },
               { num: '54+', label: 'Dishes' },
               { num: '4.7', label: 'Avg Rating' },
               { num: '25 min', label: 'Avg Delivery' },
             ].map(s => (
-              <div key={s.label} className="flex flex-col">
-                <span className="text-2xl font-extrabold text-white md:text-3xl">{s.num}</span>
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{s.label}</span>
+              <div key={s.label} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-3">
+                <p className="text-lg font-semibold text-white">{s.num}</p>
+                <p className="text-xs text-[#A1A1AA]">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── Cuisine Filter Tabs ─── */}
-      <section className="mt-8">
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <section className="mt-6">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {cuisineFilters.map(cuisine => (
             <button
               key={cuisine}
               onClick={() => setActiveCuisine(cuisine)}
-              className={`whitespace-nowrap rounded-2xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+              className={`whitespace-nowrap rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
                 activeCuisine === cuisine
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25'
-                  : 'bg-white/80 text-slate-600 border border-slate-200/80 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50'
+                  ? 'border-[#3A3A3A] bg-[#3A3A3A] text-white'
+                  : 'border-[#2A2A2A] bg-[#1A1A1A] text-[#A1A1AA] hover:text-white'
               }`}
             >
               {cuisine}
@@ -204,14 +175,13 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ─── Restaurants Grid ─── */}
-      <section className="mt-6" ref={cardsRef}>
-        <div className="flex items-center justify-between mb-5">
+      <section className="mt-6">
+        <div className="mb-4">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
+            <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
               {activeCuisine === 'All' ? 'All Restaurants' : activeCuisine}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">{filteredRestaurants.length} restaurants available</p>
+            <p className="mt-1 text-sm text-[#A1A1AA]">{filteredRestaurants.length} restaurants available</p>
           </div>
         </div>
 
@@ -231,67 +201,63 @@ const Home = () => {
             {filteredRestaurants.map((restaurant) => (
               <article
                 key={restaurant.id}
-                className="restaurant-card group surface-card rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-orange-500/10"
+                className="restaurant-card group surface-card overflow-hidden rounded-2xl transition-colors"
               >
-                {/* Image */}
                 <div className="relative overflow-hidden">
                   {restaurant.image_url ? (
                     <img
                       src={restaurant.image_url}
                       alt={restaurant.name}
-                      className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="h-44 w-full object-cover"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="flex h-48 items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-5xl">🍽️</div>
+                    <div className="flex h-44 items-center justify-center bg-[#0B0B0B] text-4xl">🍽️</div>
                   )}
 
-                  {/* Overlay badges */}
                   <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-xs font-bold text-white">
+                    <span className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
                       {restaurant.delivery_time || '25-35 min'}
                     </span>
                   </div>
                   <div className="absolute top-3 right-3">
-                    <span className="flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white shadow-lg">
+                    <span className="flex items-center gap-1 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
                       ★ {restaurant.rating || '4.5'}
                     </span>
                   </div>
 
-                  {/* Cuisine tag */}
                   <div className="absolute bottom-3 left-3">
-                    <span className="rounded-full bg-white/90 backdrop-blur-md px-3 py-1 text-xs font-semibold text-slate-700">
+                    <span className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-[#A1A1AA]">
                       {restaurant.cuisine_type || 'Multi-cuisine'}
                     </span>
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-5">
+                <div className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-500 transition-colors">{restaurant.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <h3 className="text-base font-semibold text-white">{restaurant.name}</h3>
+                      <div className="mt-1 flex items-center gap-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                         </svg>
-                        <span className="text-xs text-slate-500">{restaurant.city}</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-xs font-semibold text-orange-500">{restaurant.price_range || '₹₹'}</span>
+                        <span className="text-xs text-[#A1A1AA]">{restaurant.city}</span>
+                        <span className="text-[#71717A]">•</span>
+                        <span className="text-xs text-[#A1A1AA]">{restaurant.price_range || '₹₹'}</span>
                       </div>
                     </div>
                   </div>
 
-                  <p className="mt-3 text-sm text-slate-500 leading-relaxed line-clamp-2">{restaurant.description || 'Fresh and tasty meals delivered fast.'}</p>
+                  <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#A1A1AA]">{restaurant.description || 'Fresh and tasty meals delivered fast.'}</p>
 
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="flex h-2 w-2 rounded-full bg-green-400"></span>
-                      <span className="text-xs text-slate-500">Open now</span>
+                      <span className="flex h-2 w-2 rounded-full bg-[#D4D4D8]"></span>
+                      <span className="text-xs text-[#A1A1AA]">Open now</span>
                     </div>
                     <Link
                       to={`/restaurants/${restaurant.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:from-orange-500 hover:to-amber-500 hover:shadow-orange-500/25"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-xs font-medium text-white transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]"
                     >
                       View Menu
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
@@ -304,14 +270,13 @@ const Home = () => {
         )}
       </section>
 
-      {/* ─── Quick Reels Preview ─── */}
-      <section className="mt-12 mb-4">
-        <div className="flex items-center justify-between mb-5">
+      <section className="mb-4 mt-10">
+        <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">🎬 Food Reels</h2>
-            <p className="text-sm text-slate-500 mt-1">Trending cooking videos from top chefs</p>
+            <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">Food Reels</h2>
+            <p className="mt-1 text-sm text-[#A1A1AA]">Trending cooking videos from chefs</p>
           </div>
-          <Link to="/reels" className="text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors">
+          <Link to="/reels" className="text-sm font-medium text-[#D4D4D8] transition-colors hover:text-white">
             View All →
           </Link>
         </div>
@@ -325,14 +290,13 @@ const Home = () => {
             { img: '/images/reels/reel5.png', title: 'Sushi Roll 🍣', views: '21K' },
             { img: '/images/reels/reel6.png', title: 'Cheese Pull 🧀', views: '34K' },
           ].map((reel, i) => (
-            <Link key={i} to="/reels" className="group relative overflow-hidden rounded-2xl aspect-[9/14]">
-              <img src={reel.img} alt={reel.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <Link key={i} to="/reels" className="group relative aspect-9/14 overflow-hidden rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A]">
+              <img src={reel.img} alt={reel.title} className="h-full w-full object-cover opacity-85 transition-opacity group-hover:opacity-100" loading="lazy" />
               <div className="absolute bottom-0 left-0 right-0 p-3">
-                <p className="text-xs font-bold text-white">{reel.title}</p>
+                <p className="text-xs font-medium text-white">{reel.title}</p>
                 <div className="mt-1 flex items-center gap-1">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                  <span className="text-[10px] text-white/80">{reel.views} views</span>
+                  <span className="text-[10px] text-[#A1A1AA]">{reel.views} views</span>
                 </div>
               </div>
             </Link>

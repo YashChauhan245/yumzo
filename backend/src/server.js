@@ -9,18 +9,15 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
+const driverRoutes = require('./routes/driver');
 const restaurantRoutes = require('./routes/restaurants');
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
 const uploadRoutes = require('./routes/uploads');
+const reelRoutes = require('./routes/reels');
 const { setSocketServer } = require('./config/socket');
-const { createUsersTable } = require('./models/user');
-const { createRestaurantsTable } = require('./models/restaurant');
-const { createMenuItemsTable } = require('./models/menuItem');
-const { createCartItemsTable } = require('./models/cartItem');
-const { createOrderTables } = require('./models/order');
-const { createPaymentsTable } = require('./models/payment');
 
 const app = express();
 
@@ -90,11 +87,14 @@ app.get('/health', (_req, res) =>
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/driver', driverRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/reels', reelRoutes);
 
 // 404 handler
 app.use((_req, res) =>
@@ -113,16 +113,8 @@ const PORT = process.env.PORT || 5000;
 
 const start = async () => {
   try {
-    if (process.env.DATABASE_URL) {
-      await createUsersTable();
-      await createRestaurantsTable();
-      await createMenuItemsTable();
-      await createCartItemsTable();
-      await createOrderTables();
-      await createPaymentsTable();
-      console.log('✅ Database tables ready');
-    } else {
-      console.warn('⚠️  DATABASE_URL not set – skipping DB initialisation');
+    if (!process.env.DATABASE_URL) {
+      console.warn('⚠️  DATABASE_URL not set. Please configure env before starting API.');
     }
 
     const httpServer = http.createServer(app);
@@ -150,7 +142,7 @@ const start = async () => {
     setSocketServer(io);
 
     httpServer.listen(PORT, () => {
-      console.log(`🚀 Yumzo API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+      console.log(` Yumzo API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);

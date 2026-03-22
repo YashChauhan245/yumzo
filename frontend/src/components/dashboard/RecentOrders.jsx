@@ -75,14 +75,13 @@ const ordersData = [
 
 const statusConfig = {
   delivered: { label: 'Delivered', color: '#22c55e', bg: 'rgba(34, 197, 94, 0.12)' },
-  preparing: { label: 'Preparing', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+  preparing: { label: 'Preparing', color: '#4A4A4A', bg: 'rgba(74, 74, 74, 0.2)' },
   on_the_way: { label: 'On the Way', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.12)' },
   cancelled: { label: 'Cancelled', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
 };
 
 const RecentOrders = () => {
   const [filter, setFilter] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredOrders = filter === 'all'
     ? ordersData

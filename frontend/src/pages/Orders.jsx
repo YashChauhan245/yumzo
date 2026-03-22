@@ -75,10 +75,10 @@ const Orders = () => {
   };
 
   const statusClass = (status) => {
-    if (status === 'pending') return 'bg-amber-100 text-amber-700';
-    if (status === 'confirmed') return 'bg-emerald-100 text-emerald-700';
-    if (status === 'cancelled') return 'bg-rose-100 text-rose-700';
-    return 'bg-slate-100 text-slate-700';
+    if (status === 'pending') return 'bg-[#2A2A2A] text-[#A1A1AA]';
+    if (status === 'confirmed') return 'bg-[#2A2A2A] text-[#A1A1AA]';
+    if (status === 'cancelled') return 'bg-[#2A2A2A] text-[#A1A1AA]';
+    return 'bg-[#2A2A2A] text-[#A1A1AA]';
   };
 
   const toggleTracking = (orderId) => {
@@ -121,21 +121,21 @@ const Orders = () => {
 
   return (
     <AppLayout>
-      <section className="surface-card rounded-3xl p-6 md:p-8">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-4xl">Order history</h1>
-        <p className="mt-2 text-sm text-slate-500">
+      <section className="surface-card rounded-2xl p-6 md:p-7">
+        <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Order history</h1>
+        <p className="mt-2 text-sm text-[#A1A1AA]">
           Track your recent orders and complete payment for pending ones. Pending orders: {pendingCount}
         </p>
 
         <div className="mt-5 max-w-sm">
-          <label htmlFor="paymentMethod" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="paymentMethod" className="mb-1 block text-sm font-medium text-white">
             Default payment method
           </label>
           <select
             id="paymentMethod"
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none ring-orange-400 focus:ring-2"
+            className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3A3A3A]"
           >
             {paymentMethods.map((method) => (
               <option value={method.value} key={method.value}>
@@ -148,7 +148,7 @@ const Orders = () => {
 
       <section className="mt-6 space-y-4">
         {loading ? (
-          <div className="surface-card rounded-2xl p-4 text-sm text-slate-500">Loading orders...</div>
+          <div className="surface-card rounded-2xl p-4 text-sm text-[#A1A1AA]">Loading orders...</div>
         ) : orders.length === 0 ? (
           <EmptyState
             title="No orders yet"
@@ -165,17 +165,17 @@ const Orders = () => {
               <article
                 key={order.id}
                 className={`surface-card rounded-2xl p-5 transition ${
-                  order.id === highlightOrderId ? 'border-orange-400 ring-2 ring-orange-100' : 'border-slate-200'
+                  order.id === highlightOrderId ? 'border-[#3A3A3A]' : 'border-[#2A2A2A]'
                 }`}
               >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-base font-semibold text-slate-900">{order.restaurant_name}</h3>
+                <h3 className="text-base font-semibold text-white">{order.restaurant_name}</h3>
                 <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(order.status)}`}>
                   {order.status}
                 </span>
               </div>
 
-              <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 text-sm text-[#A1A1AA] sm:grid-cols-2">
                 <p>Total: ₹{Number(order.total_amount).toFixed(2)}</p>
                 <p>Date: {new Date(order.created_at).toLocaleString()}</p>
                 <p className="sm:col-span-2">Address: {order.delivery_address}</p>
@@ -184,7 +184,7 @@ const Orders = () => {
               {canTrack && (
                 <button
                   onClick={() => toggleTracking(order.id)}
-                  className="mt-3 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="mt-3 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm font-medium text-white hover:border-[#3A3A3A]"
                 >
                   {isTrackingThisOrder ? 'Hide tracking' : 'Track on map'}
                 </button>
@@ -194,7 +194,7 @@ const Orders = () => {
                 <button
                   onClick={() => handlePayment(order.id)}
                   disabled={payingOrderId === order.id}
-                  className="mt-4 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:opacity-60"
+                  className="mt-4 rounded-lg bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
                 >
                   {payingOrderId === order.id ? 'Processing payment...' : 'Pay now'}
                 </button>

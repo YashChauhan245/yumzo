@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { gsap } from 'gsap';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
 import { MenuSkeleton } from '../components/ui/Skeletons';
@@ -16,7 +15,7 @@ const Restaurant = () => {
   const [foodType, setFoodType] = useState('all');
   const [addingItemId, setAddingItemId] = useState('');
 
-  const loadMenu = async (selectedCategory = category) => {
+  const loadMenu = useCallback(async (selectedCategory = category) => {
     setLoading(true);
     try {
       const { data } = await restaurantsAPI.getMenu(id, {
@@ -31,17 +30,11 @@ const Restaurant = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadMenu(category);
   }, [category, id]);
 
   useEffect(() => {
-    if (!loading) {
-      gsap.fromTo('.menu-card', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.05 });
-    }
-  }, [loading, menuItems]);
+    loadMenu(category);
+  }, [category, loadMenu]);
 
   const categories = useMemo(() => {
     const set = new Set(menuItems.map((item) => item.category).filter(Boolean));
@@ -72,9 +65,9 @@ const Restaurant = () => {
 
   return (
     <AppLayout>
-      <section className="surface-card rounded-3xl p-6 md:p-8">
-        <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-4xl">{restaurant?.name || 'Restaurant menu'}</h1>
-        <p className="mt-2 text-sm text-slate-500">{restaurant?.description || 'Explore available dishes and add your favorites to cart.'}</p>
+      <section className="surface-card rounded-2xl p-6 md:p-7">
+        <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">{restaurant?.name || 'Restaurant menu'}</h1>
+        <p className="mt-2 text-sm text-[#A1A1AA]">{restaurant?.description || 'Explore available dishes and add your favorites to cart.'}</p>
 
         <div className="mt-5 flex flex-wrap gap-2">
           {categories.map((value) => {
@@ -83,8 +76,8 @@ const Restaurant = () => {
               <button
                 key={value}
                 onClick={() => setCategory(value === 'All' ? '' : value)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  active ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`rounded-xl border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  active ? 'border-[#3A3A3A] bg-[#3A3A3A] text-white' : 'border-[#2A2A2A] bg-[#0B0B0B] text-[#A1A1AA] hover:text-white'
                 }`}
               >
                 {value}
@@ -96,24 +89,24 @@ const Restaurant = () => {
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             onClick={() => setFoodType('all')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              foodType === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
+              foodType === 'all' ? 'border-[#3A3A3A] bg-[#3A3A3A] text-white' : 'border-[#2A2A2A] bg-[#0B0B0B] text-[#A1A1AA] hover:text-white'
             }`}
           >
             Show All
           </button>
           <button
             onClick={() => setFoodType('veg')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              foodType === 'veg' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
+              foodType === 'veg' ? 'border-[#3A3A3A] bg-[#3A3A3A] text-white' : 'border-[#2A2A2A] bg-[#0B0B0B] text-[#A1A1AA] hover:text-white'
             }`}
           >
             Veg Only
           </button>
           <button
             onClick={() => setFoodType('nonveg')}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-              foodType === 'nonveg' ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+            className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
+              foodType === 'nonveg' ? 'border-[#3A3A3A] bg-[#3A3A3A] text-white' : 'border-[#2A2A2A] bg-[#0B0B0B] text-[#A1A1AA] hover:text-white'
             }`}
           >
             Non-Veg Only
@@ -138,8 +131,8 @@ const Restaurant = () => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visibleMenuItems.map((item) => (
-              <article key={item.id} className="menu-card surface-card rounded-2xl p-5 transition hover:-translate-y-1 hover:shadow-xl">
-                <div className="mb-3 overflow-hidden rounded-xl bg-slate-100">
+              <article key={item.id} className="menu-card surface-card rounded-2xl p-5 transition-colors">
+                <div className="mb-3 overflow-hidden rounded-xl bg-[#0B0B0B]">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
@@ -152,7 +145,7 @@ const Restaurant = () => {
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-lg font-semibold text-slate-900">{item.name}</h3>
+                  <h3 className="text-lg font-semibold text-white">{item.name}</h3>
                   {item.is_veg ? (
                     <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
                       <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-600" />
@@ -165,13 +158,13 @@ const Restaurant = () => {
                     </span>
                   )}
                 </div>
-                <p className="mt-1 line-clamp-2 text-sm text-slate-500">{item.description || 'Delicious dish prepared fresh.'}</p>
+                <p className="mt-1 line-clamp-2 text-sm text-[#A1A1AA]">{item.description || 'Delicious dish prepared fresh.'}</p>
                 <div className="soft-divider mt-4 flex items-center justify-between pt-4">
-                  <p className="text-lg font-bold text-slate-900">₹{item.price}</p>
+                  <p className="text-lg font-semibold text-white">₹{item.price}</p>
                   <button
                     onClick={() => handleAddToCart(item.id)}
                     disabled={addingItemId === item.id}
-                    className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-orange-500 disabled:opacity-60"
+                    className="rounded-lg bg-[#3A3A3A] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
                   >
                     {addingItemId === item.id ? 'Adding...' : 'Add to cart'}
                   </button>

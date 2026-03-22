@@ -23,7 +23,6 @@ model User {
   role             String             @default("customer")
   avatarUrl        String?            @map("avatar_url")
   isActive         Boolean            @default(true) @map("is_active")
-  fraudScore       Int                @default(0)
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
 
@@ -31,7 +30,6 @@ model User {
   restaurants      Restaurant[]
   cartItems        CartItem[]
   orders           Order[]            @relation("customerOrders")
-  deliveryOrders   Order[]            @relation("deliveryOrders")
   payments         Payment[]
   reels            Reel[]
   reelLikes        ReelLike[]
@@ -124,21 +122,19 @@ model CartItem {
 
 model Order {
   id                  String         @id @default(uuid())
-  userId              String
-  restaurantId        String
-  deliveryPartnerId   String?
+  userId              String         @map("user_id")
+  restaurantId        String         @map("restaurant_id")
   status              String         @default("pending")
-  totalAmount         Decimal        @db.Decimal(10, 2)
-  deliveryAddress     String
+  totalAmount         Decimal        @map("total_amount") @db.Decimal(10, 2)
+  deliveryAddress     String         @map("delivery_address")
   notes               String?
-  qrSealCode          String?
-  fraudScoreAtOrder   Int            @default(0)
+  qrSealCode          String?        @ignore
+  fraudScoreAtOrder   Int            @ignore
   createdAt           DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
   user                User           @relation("customerOrders", fields: [userId], references: [id], onDelete: Cascade)
   restaurant          Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  deliveryPartner     User?          @relation("deliveryOrders", fields: [deliveryPartnerId], references: [id])
   items               OrderItem[]
   payment             Payment?
   deliveryProofs      DeliveryProof[]

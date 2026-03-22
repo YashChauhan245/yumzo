@@ -82,15 +82,14 @@ const RevenueChart = () => {
 
       // Area gradient
       const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-      gradient.addColorStop(0, 'rgba(249, 115, 22, 0.25)');
-      gradient.addColorStop(0.5, 'rgba(249, 115, 22, 0.08)');
-      gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+      gradient.addColorStop(0, 'rgba(58, 58, 58, 0.25)');
+      gradient.addColorStop(0.5, 'rgba(58, 58, 58, 0.08)');
+      gradient.addColorStop(1, 'rgba(58, 58, 58, 0)');
 
       // Draw area
       ctx.beginPath();
       revenueData.forEach((d, i) => {
         const x = padding.left + (chartW / (revenueData.length - 1)) * i;
-        const rawY = padding.top + chartH - ((d.value - minVal) / (maxVal - minVal)) * chartH;
         const y = padding.top + chartH - ((d.value - minVal) / (maxVal - minVal)) * chartH * eased;
         if (i === 0) ctx.moveTo(x, y);
         else {
@@ -123,7 +122,7 @@ const RevenueChart = () => {
           ctx.bezierCurveTo(cpx1, prevY, cpx2, y, x, y);
         }
       });
-      ctx.strokeStyle = '#f97316';
+      ctx.strokeStyle = '#3A3A3A';
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
@@ -136,7 +135,7 @@ const RevenueChart = () => {
           // Glow
           ctx.beginPath();
           ctx.arc(x, y, 8, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
+          ctx.fillStyle = 'rgba(58, 58, 58, 0.24)';
           ctx.fill();
 
           // Tooltip
@@ -158,7 +157,7 @@ const RevenueChart = () => {
 
         ctx.beginPath();
         ctx.arc(x, y, hoveredPoint === i ? 5 : 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#f97316';
+        ctx.fillStyle = '#3A3A3A';
         ctx.fill();
         ctx.beginPath();
         ctx.arc(x, y, hoveredPoint === i ? 3 : 1.5, 0, Math.PI * 2);

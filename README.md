@@ -1,119 +1,173 @@
-# 🍔 Yumzo - Food Delivery App
+# Yumzo - Full-Stack Food Delivery App
 
-A full-stack food delivery platform built with modern web technologies.
+Yumzo is a full-stack food delivery platform with customer ordering, driver delivery workflow, and short food reels.
+
+## Project Overview
+
+- Customer app: browse restaurants, add to cart, place and track orders, complete payments.
+- Driver app: login, view available orders, accept delivery, update order status.
+- Reels: authenticated feed with likes and comments.
+- Backend uses a role-based API structure with separate namespaces:
+	- `/api/user/*`
+	- `/api/driver/*`
+	- `/api/reels/*`
 
 ## Tech Stack
 
-| Layer      | Technology                          |
-| ---------- | ----------------------------------- |
-| Frontend   | React.js (Vite), CSS                |
-| Backend    | Node.js, Express.js                 |
-| Database   | PostgreSQL (hosted on Supabase)     |
-| ORM        | Prisma                              |
-| Auth       | JWT (Access + Refresh Tokens)       |
-| Real-time  | Socket.io                           |
+### Frontend
+- React 19 + Vite
+- React Router
+- Axios
+- Tailwind CSS v4
+- GSAP (used in reels interactions)
 
-## Project Structure
+### Backend
+- Node.js + Express
+- Prisma ORM
+- PostgreSQL (Supabase-hosted)
+- JWT authentication
+- bcryptjs
+- express-validator
+- Socket.io
 
-```
-yumzo/
-├── backend/
-│   ├── prisma/          # Database schema & migrations
-│   └── src/
-│       ├── config/      # App configuration
-│       ├── controllers/ # Route handlers (business logic)
-│       ├── db/          # Database seed data
-│       ├── middleware/   # Auth middleware, validation
-│       ├── models/       # Database queries (Prisma)
-│       ├── routes/       # API route definitions
-│       ├── services/     # Business logic layer
-│       ├── utils/        # Helper functions
-│       └── server.js     # Entry point
-│
-├── frontend/
-│   └── src/
-│       ├── components/  # Reusable UI components
-│       ├── context/     # React Context (Auth, Cart)
-│       ├── pages/       # App pages (Home, Menu, Cart)
-│       ├── services/    # API call functions
-│       └── styles/      # CSS stylesheets
-│
-└── README.md
-```
-
-## How to Run
-
-### 1. Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Backend runs on → `http://localhost:5000`
-
-### 2. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs on → `http://localhost:5173`
-
-## API Endpoints
-
-### Auth
-- `POST /api/auth/signup` — Register a new user
-- `POST /api/auth/login` — Login & get JWT token
-- `GET  /api/auth/me` — Get logged-in user info *(protected)*
-
-### Restaurants
-- `GET /api/restaurants` — List all restaurants
-- `GET /api/restaurants/:id/menu` — Get restaurant menu
-
-### Cart *(protected)*
-- `GET    /api/cart` — View cart
-- `POST   /api/cart` — Add item to cart
-- `PUT    /api/cart` — Update cart item
-- `DELETE /api/cart` — Remove item from cart
-
-### Orders *(protected)*
-- `GET  /api/orders` — View order history
-- `POST /api/orders` — Place a new order
-
-### Payments *(protected)*
-- `GET  /api/payments/:orderId` — Get payment status
-- `POST /api/payments/:orderId` — Make payment
+### Database
+- Main DB engine: PostgreSQL
+- Hosted on: Supabase
+- Accessed via: Prisma Client
 
 ## Key Features
 
-- 🔐 **JWT Authentication** — Secure login with access & refresh tokens
-- 🍕 **Restaurant Browsing** — Browse restaurants and their menus
-- 🛒 **Cart Management** — Add, update, remove items
-- 📦 **Order Placement** — Place orders and track history
-- 🎬 **Reels Section** — Instagram-style food reels
-- 🌙 **Dark Theme** — Modern dark UI design
-- 📱 **Responsive** — Works on mobile and desktop
+### Customer
+- Signup/Login with JWT
+- Browse restaurants and menus
+- Cart add/update/remove/clear
+- Place orders and view order history
+- Payment processing (mock gateway)
 
-## Environment Variables
+### Driver
+- Dedicated driver login
+- Available orders list
+- Accept order
+- Assigned orders list
+- Update delivery status (`picked_up`, `out_for_delivery`, `delivered`)
 
-Create a `.env` file in `backend/`:
+### Reels
+- Authenticated reels feed
+- Toggle like
+- View/add comments
+
+## Folder Structure (Simplified)
+
+```txt
+yumzo/
+	backend/
+		prisma/
+			schema.prisma
+		src/
+			config/
+			controllers/
+			middleware/
+			routes/
+			services/
+			db/
+			server.js
+
+	frontend/
+		src/
+			components/
+			context/
+			pages/
+				driver/
+			services/
+			styles/
+			App.jsx
+```
+
+## Local Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+### 2. Configure environment variables
+
+Create `backend/.env`:
 
 ```env
-DATABASE_URL=your_supabase_postgresql_url
+DATABASE_URL=your_supabase_postgres_connection_string
 PORT=5000
-JWT_SECRET=your_secret_key
+JWT_SECRET=your_access_token_secret
 JWT_EXPIRES_IN=7d
-JWT_REFRESH_SECRET=your_refresh_secret
+JWT_REFRESH_SECRET=your_refresh_token_secret
 JWT_REFRESH_EXPIRES_IN=30d
 ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-Create a `.env` file in `frontend/`:
+Create `frontend/.env`:
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=/api
 ```
+
+### 3. Prisma setup
+
+```bash
+npm --prefix backend run prisma:generate
+npm --prefix backend run prisma:push
+```
+
+Optional seed data:
+
+```bash
+npm --prefix backend run seed:demo
+npm --prefix backend run seed:reels
+```
+
+### 4. Run backend and frontend
+
+```bash
+npm run dev:backend
+npm run dev:frontend
+```
+
+- Backend: `http://localhost:5000`
+- Frontend: `http://localhost:5173`
+
+## Basic API Overview
+
+### Auth
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+
+### Customer APIs
+- `GET /api/user/restaurants`
+- `GET /api/user/restaurants/:id/menu`
+- `GET/POST/PUT/DELETE /api/user/cart...`
+- `POST /api/user/orders`
+- `GET /api/user/orders`
+- `GET /api/user/orders/:id`
+- `POST /api/user/payments/:orderId`
+- `GET /api/user/payments/:orderId`
+
+### Driver APIs
+- `POST /api/driver/login`
+- `GET /api/driver/orders/available`
+- `POST /api/driver/orders/:orderId/accept`
+- `GET /api/driver/orders/assigned`
+- `PATCH /api/driver/orders/:orderId/status`
+
+### Reels APIs
+- `GET /api/reels`
+- `POST /api/reels/:reelId/like`
+- `GET /api/reels/:reelId/comments`
+- `POST /api/reels/:reelId/comments`
+
+## Notes
+
+- Customer and driver pages are role-protected in frontend routes.
+- The app is intentionally kept beginner-friendly with straightforward controller/service patterns.

@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { query, pool } = require('../config/db');
+const prisma = require('../config/prisma');
 
 const demoRestaurants = [
   {
@@ -198,54 +198,69 @@ const run = async () => {
   try {
     const ownerEmail = 'demo-owner@yumzo.local';
 
-    const ownerResult = await query(
-      `INSERT INTO users (name, email, password, role)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (email)
-       DO UPDATE SET name = EXCLUDED.name
-       RETURNING id`,
-      ['Demo Owner', ownerEmail, 'demo_password_hash_not_for_login', 'restaurant_owner'],
-    );
-
-    const ownerId = ownerResult.rows[0].id;
+    const owner = await prisma.user.upsert({
+      where: { email: ownerEmail },
+      update: {
+        name: 'Demo Owner',
+        role: 'restaurant_owner',
+      },
+      create: {
+        name: 'Demo Owner',
+        email: ownerEmail,
+        password: 'demo_password_hash_not_for_login',
+        role: 'restaurant_owner',
+      },
+    });
 
     // Clear old demo restaurants before re-seeding
     for (const item of demoRestaurants) {
-      const existing = await query(
-        'SELECT id FROM restaurants WHERE name = $1 AND city = $2 LIMIT 1',
-        [item.name, item.city],
-      );
+      const existing = await prisma.restaurant.findFirst({
+        where: { name: item.name, city: item.city },
+        select: { id: true },
+      });
 
-      let restaurantId;
-
-      if (existing.rows[0]) {
-        restaurantId = existing.rows[0].id;
-        await query(
-          `UPDATE restaurants
-           SET owner_id = $1, description = $2, cuisine_type = $3, address = $4, phone = $5, image_url = $6, is_active = TRUE
-           WHERE id = $7`,
-          [ownerId, item.description, item.cuisine, item.address, item.phone, item.image, restaurantId],
-        );
-      } else {
-        const inserted = await query(
-          `INSERT INTO restaurants (owner_id, name, description, cuisine_type, address, city, phone, image_url)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING id`,
-          [ownerId, item.name, item.description, item.cuisine, item.address, item.city, item.phone, item.image],
-        );
-        restaurantId = inserted.rows[0].id;
-      }
+      const restaurant = existing
+        ? await prisma.restaurant.update({
+            where: { id: existing.id },
+            data: {
+              ownerId: owner.id,
+              description: item.description,
+              cuisineType: item.cuisine,
+              address: item.address,
+              phone: item.phone,
+              imageUrl: item.image,
+              isActive: true,
+            },
+          })
+        : await prisma.restaurant.create({
+            data: {
+              ownerId: owner.id,
+              name: item.name,
+              description: item.description,
+              cuisineType: item.cuisine,
+              address: item.address,
+              city: item.city,
+              phone: item.phone,
+              imageUrl: item.image,
+            },
+          });
 
       // Refresh menu
-      await query('DELETE FROM menu_items WHERE restaurant_id = $1', [restaurantId]);
+      await prisma.food.deleteMany({ where: { restaurantId: restaurant.id } });
 
       for (const menuItem of item.menu) {
-        await query(
-          `INSERT INTO menu_items
-           (restaurant_id, name, description, price, category, image_url, is_veg, is_available)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
-          [restaurantId, menuItem.name, menuItem.description, menuItem.price, menuItem.category, menuItem.image, menuItem.isVeg],
-        );
+        await prisma.food.create({
+          data: {
+            restaurantId: restaurant.id,
+            name: menuItem.name,
+            description: menuItem.description,
+            price: menuItem.price,
+            category: menuItem.category,
+            imageUrl: menuItem.image,
+            isVeg: menuItem.isVeg,
+            isAvailable: true,
+          },
+        });
       }
     }
 
@@ -257,7 +272,7 @@ const run = async () => {
     console.error('Failed to seed demo data:', error.message);
     process.exitCode = 1;
   } finally {
-    await pool.end();
+    await prisma.$disconnect();
   }
 };
 

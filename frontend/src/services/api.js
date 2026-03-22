@@ -41,31 +41,47 @@ api.interceptors.response.use(
 export const authAPI = {
   signup: (data) => api.post('/auth/signup', data),
   login: (data) => api.post('/auth/login', data),
+  driverLogin: (data) => api.post('/driver/login', data),
   getMe: () => api.get('/auth/me'),
 };
 
 export const restaurantsAPI = {
-  getAll: (params = {}) => api.get('/restaurants', { params }),
-  getMenu: (restaurantId, params = {}) => api.get(`/restaurants/${restaurantId}/menu`, { params }),
+  getAll: (params = {}) => api.get('/user/restaurants', { params }),
+  getMenu: (restaurantId, params = {}) => api.get(`/user/restaurants/${restaurantId}/menu`, { params }),
 };
 
 export const cartAPI = {
-  getCart: () => api.get('/cart'),
-  addItem: (payload) => api.post('/cart', payload),
-  updateItem: (itemId, payload) => api.put(`/cart/${itemId}`, payload),
-  removeItem: (itemId) => api.delete(`/cart/${itemId}`),
-  clearCart: () => api.delete('/cart'),
+  getCart: () => api.get('/user/cart'),
+  addItem: (payload) => api.post('/user/cart', payload),
+  updateItem: (itemId, payload) => api.put(`/user/cart/${itemId}`, payload),
+  removeItem: (itemId) => api.delete(`/user/cart/${itemId}`),
+  clearCart: () => api.delete('/user/cart'),
 };
 
 export const ordersAPI = {
-  placeOrder: (payload) => api.post('/orders', payload),
-  getOrders: () => api.get('/orders'),
-  getOrder: (orderId) => api.get(`/orders/${orderId}`),
+  placeOrder: (payload) => api.post('/user/orders', payload),
+  getOrders: () => api.get('/user/orders'),
+  getOrder: (orderId) => api.get(`/user/orders/${orderId}`),
 };
 
 export const paymentsAPI = {
-  payOrder: (orderId, payload) => api.post(`/payments/${orderId}`, payload),
-  getPaymentStatus: (orderId) => api.get(`/payments/${orderId}`),
+  payOrder: (orderId, payload) => api.post(`/user/payments/${orderId}`, payload),
+  getPaymentStatus: (orderId) => api.get(`/user/payments/${orderId}`),
+};
+
+export const driverAPI = {
+  login: (payload) => api.post('/driver/login', payload),
+  getAvailableOrders: () => api.get('/driver/orders/available'),
+  acceptOrder: (orderId) => api.post(`/driver/orders/${orderId}/accept`),
+  getAssignedOrders: () => api.get('/driver/orders/assigned'),
+  updateOrderStatus: (orderId, status) => api.patch(`/driver/orders/${orderId}/status`, { status }),
+};
+
+export const reelsAPI = {
+  getFeed: () => api.get('/reels'),
+  toggleLike: (reelId) => api.post(`/reels/${reelId}/like`),
+  getComments: (reelId) => api.get(`/reels/${reelId}/comments`),
+  addComment: (reelId, payload) => api.post(`/reels/${reelId}/comments`, payload),
 };
 
 export const getApiErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {

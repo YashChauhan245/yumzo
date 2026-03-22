@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { gsap } from 'gsap';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -20,16 +19,6 @@ const Signup = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    gsap.fromTo(
-      containerRef.current,
-      { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.45, ease: 'power2.out' },
-    );
-  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -105,25 +94,22 @@ const Signup = () => {
   ];
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4">
-      <div className="absolute -right-28 -top-20 h-80 w-80 rounded-full bg-orange-200/70 blur-3xl" />
-      <div className="absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-amber-200/70 blur-3xl" />
-      <div ref={containerRef} className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-black tracking-tight text-orange-600">Yumzo</h1>
-          <p className="mt-2 text-slate-500">Create your account and start ordering in seconds.</p>
+    <div className="flex min-h-screen items-center justify-center bg-[#0B0B0B] p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-6 text-left">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">Yumzo</h1>
+          <p className="mt-2 text-sm text-[#A1A1AA]">Create your account.</p>
         </div>
 
-        <div className="glass-card rounded-3xl p-8 shadow-2xl shadow-slate-300/40">
-          <h2 className="mb-2 text-2xl font-semibold text-slate-900">
+        <div className="surface-card rounded-2xl p-6">
+          <h2 className="mb-1 text-xl font-semibold text-white">
             Create an account
           </h2>
-          <p className="mb-6 text-sm text-slate-500">Use your details below to set up your Yumzo profile.</p>
+          <p className="mb-6 text-sm text-[#A1A1AA]">Use your details below to set up your Yumzo profile.</p>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div>
-              <label htmlFor="role" className="mb-1 block text-sm font-medium text-slate-700">
+              <label htmlFor="role" className="mb-1 block text-sm font-medium text-white">
                 Account role
               </label>
               <select
@@ -131,7 +117,7 @@ const Signup = () => {
                 name="role"
                 value={form.role}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-800 outline-none ring-orange-300 transition focus:ring-2"
+                className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3A3A3A]"
               >
                 <option value="customer">Customer</option>
                 <option value="driver">Driver</option>
@@ -142,7 +128,7 @@ const Signup = () => {
               <div key={id}>
                 <label
                   htmlFor={id}
-                  className="mb-1 block text-sm font-medium text-slate-700"
+                  className="mb-1 block text-sm font-medium text-white"
                 >
                   {label}
                 </label>
@@ -154,8 +140,8 @@ const Signup = () => {
                   value={form[id]}
                   onChange={handleChange}
                   placeholder={placeholder}
-                  className={`w-full rounded-xl border px-4 py-3 text-slate-800 outline-none ring-orange-300 transition focus:ring-2 ${
-                    errors[id] ? 'border-red-400' : 'border-slate-300'
+                  className={`w-full rounded-xl border bg-[#0B0B0B] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3A3A3A] ${
+                    errors[id] ? 'border-red-400' : 'border-[#2A2A2A]'
                   }`}
                 />
                 {errors[id] && (
@@ -167,17 +153,17 @@ const Signup = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-orange-500 disabled:opacity-60"
+              className="w-full rounded-xl bg-[#3A3A3A] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
             >
               {loading ? 'Creating account…' : 'Create account'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-sm text-[#A1A1AA]">
             Already have an account?{' '}
             <Link
               to="/login"
-              className="font-medium text-orange-600 hover:underline"
+              className="font-medium text-[#D4D4D8] hover:underline"
             >
               Sign in
             </Link>

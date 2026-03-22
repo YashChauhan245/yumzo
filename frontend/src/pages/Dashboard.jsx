@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
@@ -13,17 +13,13 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
-  const [theme, setTheme] = useState(localStorage.getItem('yumzo-theme') || 'dark');
+  const theme = 'dark';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('yumzo-theme', theme);
     window.dispatchEvent(new Event('yumzo-theme-change'));
   }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
 
   return (
     <div className={`dashboard-shell ${theme}`}>
@@ -38,7 +34,7 @@ const Dashboard = () => {
         <DashboardHeader
           user={user}
           theme={theme}
-          onToggleTheme={toggleTheme}
+          onToggleTheme={() => {}}
         />
 
         <div className="dashboard-content">

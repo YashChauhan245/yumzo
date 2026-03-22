@@ -54,7 +54,7 @@ const LiveDeliveryMap = () => {
       }
 
       // Draw some "road" lines
-      const roadColor = isDark ? 'rgba(249, 115, 22, 0.08)' : 'rgba(249, 115, 22, 0.1)';
+      const roadColor = isDark ? 'rgba(58, 58, 58, 0.24)' : 'rgba(58, 58, 58, 0.2)';
       ctx.strokeStyle = roadColor;
       ctx.lineWidth = 2;
 
@@ -84,14 +84,14 @@ const LiveDeliveryMap = () => {
         const y = baseY + Math.cos(timeRef.current * 0.8 + i * 2) * 10;
 
         const isDelivering = agent.status === 'delivering';
-        const color = isDelivering ? '#f97316' : '#22c55e';
+        const color = isDelivering ? '#3A3A3A' : '#22c55e';
 
         // Pulse ring for delivering agents
         if (isDelivering) {
           const pulseRadius = 12 + Math.sin(timeRef.current * 3 + i) * 6;
           ctx.beginPath();
           ctx.arc(x, y, pulseRadius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(249, 115, 22, ${0.15 - Math.sin(timeRef.current * 3 + i) * 0.08})`;
+          ctx.fillStyle = `rgba(58, 58, 58, ${0.24 - Math.sin(timeRef.current * 3 + i) * 0.08})`;
           ctx.fill();
         }
 
@@ -155,7 +155,7 @@ const LiveDeliveryMap = () => {
         </div>
         <div className="map-legend">
           <span className="map-legend-item">
-            <span className="legend-dot" style={{ background: '#f97316' }}></span>
+            <span className="legend-dot" style={{ background: '#3A3A3A' }}></span>
             Delivering
           </span>
           <span className="map-legend-item">

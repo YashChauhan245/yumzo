@@ -17,16 +17,12 @@ const DashboardPreview = () => {
   const mockUser = { name: 'Yash Chauhan', role: 'admin', email: 'yash@yumzo.com' };
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
-  const [theme, setTheme] = useState(localStorage.getItem('yumzo-theme') || 'dark');
+  const theme = 'dark';
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('yumzo-theme', theme);
   }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
 
   return (
     <div className={`dashboard-shell ${theme}`}>
@@ -41,7 +37,7 @@ const DashboardPreview = () => {
         <DashboardHeader
           user={mockUser}
           theme={theme}
-          onToggleTheme={toggleTheme}
+          onToggleTheme={() => {}}
         />
 
         <div className="dashboard-content">

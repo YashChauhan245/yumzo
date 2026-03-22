@@ -95,20 +95,20 @@ const Cart = () => {
 
   return (
     <AppLayout>
-      <section className="surface-card rounded-3xl p-6 md:p-8">
+      <section className="surface-card rounded-2xl p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-4xl">Your cart</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Your cart</h1>
           {items.length > 0 ? (
             <button
               onClick={handleClearCart}
-              className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+              className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm font-medium text-[#A1A1AA] transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]"
             >
               Clear cart
             </button>
           ) : null}
         </div>
         {groupedRestaurant ? (
-          <p className="mt-2 text-sm text-slate-500">Ordering from {groupedRestaurant}</p>
+          <p className="mt-2 text-sm text-[#A1A1AA]">Ordering from {groupedRestaurant}</p>
         ) : null}
       </section>
 
@@ -125,11 +125,11 @@ const Cart = () => {
             />
           ) : (
             items.map((item) => (
-              <article key={item.id} className="surface-card rounded-2xl p-4 transition hover:shadow-lg">
+              <article key={item.id} className="surface-card rounded-2xl p-4 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-slate-900">{item.item_name}</h3>
+                      <h3 className="text-base font-semibold text-white">{item.item_name}</h3>
                       {item.is_veg ? (
                         <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">
                           <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-600" />
@@ -142,11 +142,11 @@ const Cart = () => {
                         </span>
                       )}
                     </div>
-                    <p className="mt-1 text-sm text-slate-500">₹{item.price} each</p>
+                    <p className="mt-1 text-sm text-[#A1A1AA]">₹{item.price} each</p>
                   </div>
                   <button
                     onClick={() => handleRemoveItem(item.id)}
-                    className="rounded-lg px-2 py-1 text-sm text-rose-600 transition hover:bg-rose-50"
+                    className="rounded-lg border border-[#2A2A2A] px-2 py-1 text-sm text-[#A1A1AA] transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]"
                   >
                     Remove
                   </button>
@@ -156,19 +156,19 @@ const Cart = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
-                      className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-sm font-semibold text-white hover:border-[#3A3A3A]"
                     >
                       -
                     </button>
-                    <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                    <span className="w-8 text-center text-sm font-semibold text-white">{item.quantity}</span>
                     <button
                       onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                      className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-sm font-semibold text-white hover:border-[#3A3A3A]"
                     >
                       +
                     </button>
                   </div>
-                  <p className="text-sm font-semibold text-slate-900">₹{(Number(item.price) * Number(item.quantity)).toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-white">₹{(Number(item.price) * Number(item.quantity)).toFixed(2)}</p>
                 </div>
               </article>
             ))
@@ -176,11 +176,11 @@ const Cart = () => {
         </div>
 
         <aside className="surface-card h-fit rounded-2xl p-5">
-          <h2 className="text-lg font-semibold text-slate-900">Checkout</h2>
-          <p className="mt-1 text-sm text-slate-500">Confirm details and place your order.</p>
+          <h2 className="text-lg font-semibold text-white">Checkout</h2>
+          <p className="mt-1 text-sm text-[#A1A1AA]">Confirm details and place your order.</p>
 
           <div className="mt-5">
-            <label htmlFor="deliveryAddress" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="deliveryAddress" className="mb-1 block text-sm font-medium text-white">
               Delivery address
             </label>
             <textarea
@@ -189,20 +189,20 @@ const Cart = () => {
               onChange={(e) => setDeliveryAddress(e.target.value)}
               rows={4}
               placeholder="Flat, street, area, city"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none ring-orange-400 focus:ring-2"
+              className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3A3A3A]"
             />
           </div>
 
-          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="mt-5 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold text-slate-900">₹{Number(totalAmount).toFixed(2)}</span>
+              <span className="text-[#A1A1AA]">Subtotal</span>
+              <span className="font-semibold text-white">₹{Number(totalAmount).toFixed(2)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-slate-500">Delivery</span>
-              <span className="font-semibold text-slate-900">₹0.00</span>
+              <span className="text-[#A1A1AA]">Delivery</span>
+              <span className="font-semibold text-white">₹0.00</span>
             </div>
-            <div className="mt-3 border-t border-slate-200 pt-3 text-base font-bold text-slate-900">
+            <div className="mt-3 border-t border-[#2A2A2A] pt-3 text-base font-semibold text-white">
               Total: ₹{Number(totalAmount).toFixed(2)}
             </div>
           </div>
@@ -210,12 +210,12 @@ const Cart = () => {
           <button
             disabled={items.length === 0 || placingOrder}
             onClick={handlePlaceOrder}
-            className="mt-5 w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 w-full rounded-xl bg-[#3A3A3A] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {placingOrder ? 'Placing order...' : 'Place order'}
           </button>
 
-          <Link to="/orders" className="mt-3 inline-block text-sm font-medium text-slate-600 hover:text-slate-900">
+          <Link to="/orders" className="mt-3 inline-block text-sm font-medium text-[#A1A1AA] hover:text-[#D4D4D8]">
             View order history
           </Link>
         </aside>

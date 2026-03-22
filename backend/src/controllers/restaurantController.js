@@ -1,23 +1,16 @@
 const { validationResult } = require('express-validator');
-const RestaurantModel = require('../models/restaurant');
-const MenuItemModel = require('../models/menuItem');
 const prismaRestaurantService = require('../services/prismaRestaurantService');
 
-const usePrisma = process.env.USE_PRISMA === 'true';
-const restaurantService = usePrisma
-  ? {
-      findAll: prismaRestaurantService.findAllRestaurants,
-      findById: prismaRestaurantService.findRestaurantById,
-      create: prismaRestaurantService.createRestaurant,
-    }
-  : RestaurantModel;
-const menuService = usePrisma
-  ? {
-      findByRestaurant: prismaRestaurantService.findMenuByRestaurant,
-    }
-  : MenuItemModel;
+const restaurantService = {
+  findAll: prismaRestaurantService.findAllRestaurants,
+  findById: prismaRestaurantService.findRestaurantById,
+  create: prismaRestaurantService.createRestaurant,
+};
+const menuService = {
+  findByRestaurant: prismaRestaurantService.findMenuByRestaurant,
+};
 
-// GET /api/restaurants - list all active restaurants
+// GET /api/user/restaurants - list active restaurants for customers
 const getAllRestaurants = async (req, res) => {
   try {
     const { city, cuisine } = req.query;
@@ -33,16 +26,14 @@ const getAllRestaurants = async (req, res) => {
   }
 };
 
-// GET /api/restaurants/:id/menu - get menu items for a restaurant
+// GET /api/user/restaurants/:id/menu - get menu items for a restaurant
 const getMenuByRestaurant = async (req, res) => {
   try {
     const { id } = req.params;
-    const restaurantId = Number(id);
+    const restaurantId = id;
 
     // Make sure the restaurant exists
-    const restaurant = usePrisma
-      ? await restaurantService.findById(restaurantId)
-      : await restaurantService.findById(id);
+    const restaurant = await restaurantService.findById(restaurantId);
     if (!restaurant) {
       return res.status(404).json({ success: false, message: 'Restaurant not found' });
     }
@@ -51,15 +42,10 @@ const getMenuByRestaurant = async (req, res) => {
     // Convert is_veg query string to boolean (or leave undefined if not provided)
     const isVegFilter = is_veg === 'true' ? true : is_veg === 'false' ? false : undefined;
 
-    const menuItems = usePrisma
-      ? await menuService.findByRestaurant(restaurantId, {
-          category,
-          is_veg: isVegFilter,
-        })
-      : await menuService.findByRestaurant(id, {
-          category,
-          is_veg: isVegFilter,
-        });
+    const menuItems = await menuService.findByRestaurant(restaurantId, {
+      category,
+      is_veg: isVegFilter,
+    });
 
     return res.status(200).json({
       success: true,

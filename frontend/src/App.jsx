@@ -11,6 +11,10 @@ import Orders from './pages/Orders';
 import Dashboard from './pages/Dashboard';
 import DashboardPreview from './pages/DashboardPreview';
 import FoodReels from './pages/FoodReels';
+import DriverLogin from './pages/driver/DriverLogin';
+import DriverDashboard from './pages/driver/DriverDashboard';
+import AvailableOrders from './pages/driver/AvailableOrders';
+import AssignedOrders from './pages/driver/AssignedOrders';
 
 function App() {
   return (
@@ -37,14 +41,15 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/driver/login" element={<DriverLogin />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard-preview" element={<DashboardPreview />} />
 
-          {/* Protected routes */}
+          {/* Customer-only routes */}
           <Route
             path="/"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <Home />
               </ProtectedRoute>
             }
@@ -52,7 +57,7 @@ function App() {
           <Route
             path="/restaurants/:id"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <Restaurant />
               </ProtectedRoute>
             }
@@ -60,7 +65,7 @@ function App() {
           <Route
             path="/cart"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <Cart />
               </ProtectedRoute>
             }
@@ -68,27 +73,50 @@ function App() {
           <Route
             path="/orders"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <Orders />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/reels"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <FoodReels />
               </ProtectedRoute>
             }
           />
-
-          {/* Default redirect */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['customer']}>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Driver-only routes */}
+          <Route
+            path="/driver/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/driver/orders/available"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <AvailableOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/driver/orders/assigned"
+            element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <AssignedOrders />
               </ProtectedRoute>
             }
           />

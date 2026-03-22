@@ -1,9 +1,9 @@
 const { validationResult } = require('express-validator');
-const OrderModel = require('../models/order');
-const PaymentModel = require('../models/payment');
+const prismaOrderService = require('../services/prismaOrderService');
+const prismaPaymentService = require('../services/prismaPaymentService');
 const { processPayment } = require('../services/mockPaymentGateway');
 
-// POST /api/payments/:orderId - pay for an order
+// POST /api/user/payments/:orderId - pay for an order
 const handlePayment = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -16,7 +16,7 @@ const handlePayment = async (req, res) => {
     const userId = req.user.id;
 
     // Make sure the order exists and belongs to this user
-    const order = await OrderModel.findById(orderId, userId);
+    const order = await prismaOrderService.findById(orderId, userId);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
@@ -30,7 +30,7 @@ const handlePayment = async (req, res) => {
     }
 
     // Don't process payment if it was already paid successfully
-    const existingPayment = await PaymentModel.findByOrderId(orderId);
+    const existingPayment = await prismaPaymentService.findByOrderId(orderId);
     if (existingPayment && existingPayment.payment_status === 'success') {
       return res.status(400).json({
         success: false,
@@ -47,7 +47,7 @@ const handlePayment = async (req, res) => {
     const paymentStatus = gatewayResult.success ? 'success' : 'failed';
 
     // Save the payment record
-    const payment = await PaymentModel.create({
+    const payment = await prismaPaymentService.savePayment({
       orderId,
       userId,
       amount: parseFloat(order.total_amount),
@@ -59,7 +59,7 @@ const handlePayment = async (req, res) => {
 
     // Update order status to confirmed if payment succeeded
     if (gatewayResult.success) {
-      await OrderModel.updateStatus(orderId, 'confirmed');
+      await prismaOrderService.updateStatus(orderId, 'confirmed');
     }
 
     const statusCode = gatewayResult.success ? 200 : 402;
@@ -74,19 +74,19 @@ const handlePayment = async (req, res) => {
   }
 };
 
-// GET /api/payments/:orderId - get payment status for an order
+// GET /api/user/payments/:orderId - get payment status for an order
 const getPaymentStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.user.id;
 
     // Verify the order belongs to this user
-    const order = await OrderModel.findById(orderId, userId);
+    const order = await prismaOrderService.findById(orderId, userId);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    const payment = await PaymentModel.findByOrderId(orderId);
+    const payment = await prismaPaymentService.findByOrderId(orderId);
     if (!payment) {
       return res.status(404).json({ success: false, message: 'No payment found for this order' });
     }

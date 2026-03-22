@@ -1,11 +1,9 @@
 const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
-const UserModel = require('../models/user');
 const prismaAuthService = require('../services/prismaAuthService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
-const usePrisma = process.env.USE_PRISMA === 'true';
-const authService = usePrisma ? prismaAuthService : UserModel;
+const authService = prismaAuthService;
 
 // POST /api/auth/signup
 const signup = async (req, res) => {
@@ -15,7 +13,8 @@ const signup = async (req, res) => {
   }
 
   const { name, email, password, phone, role } = req.body;
-  const normalizedRole = role === 'driver' ? 'delivery_agent' : role;
+  const normalizedRole = role === 'delivery_agent' ? 'driver' : role;
+  const dbRole = normalizedRole === 'driver' ? 'delivery_agent' : (normalizedRole || 'customer');
 
   try {
     // Check if email is already registered
@@ -31,17 +30,22 @@ const signup = async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone || null,
-      role: normalizedRole || 'customer',
+      role: dbRole,
     });
 
-    const tokenPayload = { id: user.id, email: user.email, role: user.role };
+    const responseUser = {
+      ...user,
+      role: dbRole === 'delivery_agent' ? 'driver' : dbRole,
+    };
+
+    const tokenPayload = { id: user.id, email: user.email, role: responseUser.role };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
     return res.status(201).json({
       success: true,
       message: 'Account created successfully',
-      data: { user, accessToken, refreshToken },
+      data: { user: responseUser, accessToken, refreshToken },
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -73,12 +77,14 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    const tokenPayload = { id: user.id, email: user.email, role: user.role };
+    const normalizedRole = user.role === 'delivery_agent' ? 'driver' : user.role;
+    const tokenPayload = { id: user.id, email: user.email, role: normalizedRole };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
     // Don't send the password hash in the response
     const { password: _pw, ...publicUser } = user;
+    publicUser.role = normalizedRole;
 
     return res.status(200).json({
       success: true,

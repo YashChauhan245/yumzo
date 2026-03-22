@@ -1,15 +1,10 @@
 const { validationResult } = require('express-validator');
-const CartItemModel = require('../models/cartItem');
-const MenuItemModel = require('../models/menuItem');
 const prismaCartService = require('../services/prismaCartService');
 
-const usePrisma = process.env.USE_PRISMA === 'true';
-const cartService = usePrisma ? prismaCartService : CartItemModel;
-const menuService = usePrisma
-  ? { findById: prismaCartService.findMenuItemById }
-  : MenuItemModel;
+const cartService = prismaCartService;
+const menuService = { findById: prismaCartService.findMenuItemById };
 
-// GET /api/cart - get the logged in user's cart
+// GET /api/user/cart - return the logged in customer's cart
 const getCart = async (req, res) => {
   try {
     const items = await cartService.getByUser(req.user.id);
@@ -31,7 +26,7 @@ const getCart = async (req, res) => {
   }
 };
 
-// POST /api/cart - add item to cart (or increment quantity if already there)
+// POST /api/user/cart - add item to cart (or increment quantity)
 const addToCart = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -68,7 +63,7 @@ const addToCart = async (req, res) => {
   }
 };
 
-// PUT /api/cart/:itemId - update quantity of a cart item
+// PUT /api/user/cart/:itemId - update quantity of a cart item
 const updateQuantity = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -94,7 +89,7 @@ const updateQuantity = async (req, res) => {
   }
 };
 
-// DELETE /api/cart/:itemId - remove a single item from cart
+// DELETE /api/user/cart/:itemId - remove a single item from cart
 const removeItem = async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -111,7 +106,7 @@ const removeItem = async (req, res) => {
   }
 };
 
-// DELETE /api/cart - clear the entire cart
+// DELETE /api/user/cart - clear the entire cart
 const clearCart = async (req, res) => {
   try {
     await cartService.clearCart(req.user.id);

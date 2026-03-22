@@ -58,8 +58,8 @@ const StarRating = ({ rating }) => {
           width="14"
           height="14"
           viewBox="0 0 24 24"
-          fill={i < fullStars ? '#f59e0b' : (i === fullStars && hasHalf ? 'url(#halfGrad)' : 'none')}
-          stroke={i < fullStars || (i === fullStars && hasHalf) ? '#f59e0b' : 'currentColor'}
+          fill={i < fullStars ? '#4A4A4A' : (i === fullStars && hasHalf ? 'url(#halfGrad)' : 'none')}
+          stroke={i < fullStars || (i === fullStars && hasHalf) ? '#4A4A4A' : 'currentColor'}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -67,7 +67,7 @@ const StarRating = ({ rating }) => {
         >
           <defs>
             <linearGradient id="halfGrad">
-              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="50%" stopColor="#4A4A4A" />
               <stop offset="50%" stopColor="transparent" />
             </linearGradient>
           </defs>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const navItems = [
   {
@@ -76,7 +76,7 @@ const DashboardSidebar = ({ collapsed, onToggle, activeNav, onNavChange }) => {
   return (
     <aside className={`dash-sidebar ${collapsed ? 'collapsed' : ''}`}>
       {/* Logo */}
-      <div className="sidebar-logo">
+      <Link to="/" className="sidebar-logo">
         <div className="logo-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="url(#logoGrad)" />
@@ -85,14 +85,14 @@ const DashboardSidebar = ({ collapsed, onToggle, activeNav, onNavChange }) => {
             <circle cx="15" cy="10" r="1.2" fill="#fff" />
             <defs>
               <linearGradient id="logoGrad" x1="2" y1="2" x2="22" y2="22">
-                <stop stopColor="#f97316" />
-                <stop offset="1" stopColor="#f59e0b" />
+                <stop stopColor="#3A3A3A" />
+                <stop offset="1" stopColor="#4A4A4A" />
               </linearGradient>
             </defs>
           </svg>
         </div>
         {!collapsed && <span className="logo-text">Yumzo</span>}
-      </div>
+      </Link>
 
       {/* Toggle */}
       <button className="sidebar-toggle" onClick={onToggle} aria-label="Toggle sidebar">

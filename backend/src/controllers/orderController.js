@@ -1,10 +1,9 @@
 const { validationResult } = require('express-validator');
-const OrderModel = require('../models/order');
-const CartItemModel = require('../models/cartItem');
-const MenuItemModel = require('../models/menuItem');
+const prismaOrderService = require('../services/prismaOrderService');
+const prismaCartService = require('../services/prismaCartService');
 const { emitOrderUpdate } = require('../config/socket');
 
-// POST /api/orders - place an order from the cart
+// POST /api/user/orders - place an order from current cart items
 const placeOrder = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -16,7 +15,7 @@ const placeOrder = async (req, res) => {
     const userId = req.user.id;
 
     // Load the user's cart
-    const cartItems = await CartItemModel.getByUser(userId);
+    const cartItems = await prismaCartService.getByUser(userId);
     if (cartItems.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart is empty. Add items before placing an order.' });
     }
@@ -34,7 +33,7 @@ const placeOrder = async (req, res) => {
 
     // Check that each item is still available
     for (const ci of cartItems) {
-      const menuItem = await MenuItemModel.findById(ci.menu_item_id);
+      const menuItem = await prismaCartService.findMenuItemById(ci.menu_item_id);
       if (!menuItem || !menuItem.is_available) {
         return res.status(400).json({
           success: false,
@@ -51,7 +50,7 @@ const placeOrder = async (req, res) => {
       quantity: ci.quantity,
     }));
 
-    const order = await OrderModel.createOrder({
+    const order = await prismaOrderService.createOrder({
       userId,
       restaurantId,
       deliveryAddress: delivery_address,
@@ -68,7 +67,7 @@ const placeOrder = async (req, res) => {
     });
 
     // Clear the cart after ordering
-    await CartItemModel.clearCart(userId);
+    await prismaCartService.clearCart(userId);
 
     return res.status(201).json({
       success: true,
@@ -81,10 +80,10 @@ const placeOrder = async (req, res) => {
   }
 };
 
-// GET /api/orders - get order history for logged in user
+// GET /api/user/orders - list order history for logged in user
 const getOrderHistory = async (req, res) => {
   try {
-    const orders = await OrderModel.findByUser(req.user.id);
+    const orders = await prismaOrderService.findByUser(req.user.id);
     return res.status(200).json({
       success: true,
       count: orders.length,
@@ -96,10 +95,10 @@ const getOrderHistory = async (req, res) => {
   }
 };
 
-// GET /api/orders/:id - get a single order with its items
+// GET /api/user/orders/:id - get a single order with its items
 const getOrder = async (req, res) => {
   try {
-    const order = await OrderModel.findById(req.params.id, req.user.id);
+    const order = await prismaOrderService.findById(req.params.id, req.user.id);
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }

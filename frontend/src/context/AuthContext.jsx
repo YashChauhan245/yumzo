@@ -4,6 +4,11 @@ import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
+const normalizeRole = (role) => {
+  if (role === 'delivery_agent') return 'driver';
+  return role;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // initial session restore
@@ -18,7 +23,10 @@ export const AuthProvider = ({ children }) => {
       }
       try {
         const { data } = await authAPI.getMe();
-        setUser(data.data.user);
+        setUser({
+          ...data.data.user,
+          role: normalizeRole(data.data.user?.role),
+        });
       } catch {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -34,8 +42,9 @@ export const AuthProvider = ({ children }) => {
     const { user: newUser, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
-    setUser(newUser);
-    return newUser;
+    const normalized = { ...newUser, role: normalizeRole(newUser?.role) };
+    setUser(normalized);
+    return normalized;
   }, []);
 
   const login = useCallback(async (credentials) => {
@@ -43,8 +52,19 @@ export const AuthProvider = ({ children }) => {
     const { user: loggedInUser, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
-    setUser(loggedInUser);
-    return loggedInUser;
+    const normalized = { ...loggedInUser, role: normalizeRole(loggedInUser?.role) };
+    setUser(normalized);
+    return normalized;
+  }, []);
+
+  const driverLogin = useCallback(async (credentials) => {
+    const { data } = await authAPI.driverLogin(credentials);
+    const { user: loggedInUser, accessToken, refreshToken } = data.data;
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    const normalized = { ...loggedInUser, role: 'driver' };
+    setUser(normalized);
+    return normalized;
   }, []);
 
   const logout = useCallback(() => {
@@ -54,7 +74,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signup, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, signup, login, driverLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

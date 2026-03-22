@@ -5,12 +5,12 @@ const {
   getOrderHistory,
   getOrder,
 } = require('../controllers/orderController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireCustomer } = require('../middleware/auth');
 
 const router = express.Router();
 
 // All order routes require authentication
-router.use(authenticate);
+router.use(authenticate, requireCustomer);
 
 // Validation for placing an order
 const placeOrderValidation = [

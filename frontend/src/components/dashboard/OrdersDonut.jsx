@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const orderTypes = [
-  { label: 'Delivery', value: 45, color: '#f97316' },
+  { label: 'Delivery', value: 45, color: '#3A3A3A' },
   { label: 'Pickup', value: 25, color: '#3b82f6' },
   { label: 'Dine-in', value: 18, color: '#22c55e' },
   { label: 'Scheduled', value: 12, color: '#8b5cf6' },
