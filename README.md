@@ -1,105 +1,119 @@
-# Yumzo - Full Stack Food Delivery App
+# 🍔 Yumzo - Food Delivery App
 
-Yumzo is a beginner-friendly full stack food delivery project with:
+A full-stack food delivery platform built with modern web technologies.
 
-- Backend: Node.js, Express, PostgreSQL (Supabase), JWT auth
-- Frontend: React (Vite), Tailwind CSS, Axios, protected routes
+## Tech Stack
 
-## Project structure
+| Layer      | Technology                          |
+| ---------- | ----------------------------------- |
+| Frontend   | React.js (Vite), CSS                |
+| Backend    | Node.js, Express.js                 |
+| Database   | PostgreSQL (hosted on Supabase)     |
+| ORM        | Prisma                              |
+| Auth       | JWT (Access + Refresh Tokens)       |
+| Real-time  | Socket.io                           |
 
-- `backend/` - REST API, DB models, JWT middleware, tests
-- `frontend/` - React app with auth pages and dashboard
+## Project Structure
 
-## 1) Backend setup
+```
+yumzo/
+├── backend/
+│   ├── prisma/          # Database schema & migrations
+│   └── src/
+│       ├── config/      # App configuration
+│       ├── controllers/ # Route handlers (business logic)
+│       ├── db/          # Database seed data
+│       ├── middleware/   # Auth middleware, validation
+│       ├── models/       # Database queries (Prisma)
+│       ├── routes/       # API route definitions
+│       ├── services/     # Business logic layer
+│       ├── utils/        # Helper functions
+│       └── server.js     # Entry point
+│
+├── frontend/
+│   └── src/
+│       ├── components/  # Reusable UI components
+│       ├── context/     # React Context (Auth, Cart)
+│       ├── pages/       # App pages (Home, Menu, Cart)
+│       ├── services/    # API call functions
+│       └── styles/      # CSS stylesheets
+│
+└── README.md
+```
 
-1. Open terminal in `backend/`
-2. Install dependencies:
+## How to Run
+
+### 1. Backend
 
 ```bash
+cd backend
 npm install
-```
-
-1. Create `backend/.env` from `backend/.env.example`
-2. Fill required values:
-
-```env
-PORT=5000
-NODE_ENV=development
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
-JWT_SECRET=your_super_secret_jwt_key
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_SECRET=your_refresh_secret_key
-JWT_REFRESH_EXPIRES_IN=30d
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
-```
-
-1. Start backend:
-
-```bash
 npm run dev
 ```
 
-Backend health check: `http://localhost:5000/health`
+Backend runs on → `http://localhost:5000`
 
-## 2) Frontend setup
-
-1. Open terminal in `frontend/`
-2. Install dependencies:
+### 2. Frontend
 
 ```bash
+cd frontend
 npm install
+npm run dev
 ```
 
-1. Create `frontend/.env.local` from `frontend/.env.example`
-2. Set API URL:
+Frontend runs on → `http://localhost:5173`
+
+## API Endpoints
+
+### Auth
+- `POST /api/auth/signup` — Register a new user
+- `POST /api/auth/login` — Login & get JWT token
+- `GET  /api/auth/me` — Get logged-in user info *(protected)*
+
+### Restaurants
+- `GET /api/restaurants` — List all restaurants
+- `GET /api/restaurants/:id/menu` — Get restaurant menu
+
+### Cart *(protected)*
+- `GET    /api/cart` — View cart
+- `POST   /api/cart` — Add item to cart
+- `PUT    /api/cart` — Update cart item
+- `DELETE /api/cart` — Remove item from cart
+
+### Orders *(protected)*
+- `GET  /api/orders` — View order history
+- `POST /api/orders` — Place a new order
+
+### Payments *(protected)*
+- `GET  /api/payments/:orderId` — Get payment status
+- `POST /api/payments/:orderId` — Make payment
+
+## Key Features
+
+- 🔐 **JWT Authentication** — Secure login with access & refresh tokens
+- 🍕 **Restaurant Browsing** — Browse restaurants and their menus
+- 🛒 **Cart Management** — Add, update, remove items
+- 📦 **Order Placement** — Place orders and track history
+- 🎬 **Reels Section** — Instagram-style food reels
+- 🌙 **Dark Theme** — Modern dark UI design
+- 📱 **Responsive** — Works on mobile and desktop
+
+## Environment Variables
+
+Create a `.env` file in `backend/`:
+
+```env
+DATABASE_URL=your_supabase_postgresql_url
+PORT=5000
+JWT_SECRET=your_secret_key
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=your_refresh_secret
+JWT_REFRESH_EXPIRES_IN=30d
+ALLOWED_ORIGINS=http://localhost:5173
+```
+
+Create a `.env` file in `frontend/`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
-
-1. Start frontend:
-
-```bash
-npm run dev
-```
-
-Frontend runs on `http://localhost:5173`
-
-## 3) Auth flow
-
-1. Signup from `/signup`
-2. Login from `/login`
-3. App stores JWT access token in localStorage
-4. Protected route (`/dashboard`) uses token + `/api/auth/me` verification
-
-## Useful scripts
-
-Backend (`backend/package.json`):
-
-- `npm run dev` - start with nodemon
-- `npm run start` - start with node
-- `npm test` - run Jest test suite
-
-Frontend (`frontend/package.json`):
-
-- `npm run start` - start Vite dev server
-- `npm run dev` - start Vite dev server
-- `npm run build` - production build
-- `npm run preview` - preview production build
-- `npm run lint` - lint checks
-
-## API endpoints
-
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `GET /api/auth/me` (protected)
-- `GET /api/restaurants`
-- `GET /api/restaurants/:id/menu`
-- `GET/POST/PUT/DELETE /api/cart` (protected)
-- `GET/POST /api/orders` (protected)
-- `GET/POST /api/payments/:orderId` (protected)
-
-## Notes
-
-- If JWT secrets are missing in local development, backend now uses safe fallback secrets to avoid startup/signup crashes.
-- For production, always set strong JWT secrets explicitly.
