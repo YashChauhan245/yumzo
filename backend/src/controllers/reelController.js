@@ -10,6 +10,14 @@ const getReels = async (req, res) => {
       data: { reels },
     });
   } catch (err) {
+    if (err.code === 'P2021') {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: { reels: [] },
+        message: 'Reels data is not initialized yet',
+      });
+    }
     console.error('getReels error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -31,6 +39,9 @@ const toggleReelLike = async (req, res) => {
       data: result,
     });
   } catch (err) {
+    if (err.code === 'P2021') {
+      return res.status(503).json({ success: false, message: 'Reels feature is not initialized yet' });
+    }
     console.error('toggleReelLike error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -52,6 +63,9 @@ const getReelComments = async (req, res) => {
       data: { comments },
     });
   } catch (err) {
+    if (err.code === 'P2021') {
+      return res.status(200).json({ success: true, count: 0, data: { comments: [] } });
+    }
     console.error('getReelComments error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -75,6 +89,9 @@ const addReelComment = async (req, res) => {
       data: result,
     });
   } catch (err) {
+    if (err.code === 'P2021') {
+      return res.status(503).json({ success: false, message: 'Reels feature is not initialized yet' });
+    }
     console.error('addReelComment error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }

@@ -12,20 +12,23 @@ const formatOrderItem = (item) => ({
 const formatOrder = (order) => ({
   id: order.id,
   user_id: order.userId,
-  driver_id: null,
+  driver_id: order.driverId || null,
+  driver_name: order.driver?.name || null,
   restaurant_id: order.restaurantId,
   restaurant_name: order.restaurant?.name || null,
   customer_name: order.user?.name || null,
   status: order.status,
-  total_amount: order.totalAmount,
+  total_price: order.totalPrice,
+  total_amount: order.totalPrice,
   delivery_address: order.deliveryAddress,
   notes: order.notes,
   created_at: order.createdAt,
+  updated_at: order.updatedAt,
   items: Array.isArray(order.items) ? order.items.map(formatOrderItem) : undefined,
 });
 
 const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null, items }) => {
-  const totalAmount = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+  const totalPrice = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
 
   const order = await prisma.$transaction(async (tx) => {
     const createdOrder = await tx.order.create({
@@ -34,7 +37,7 @@ const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null
         restaurantId,
         deliveryAddress,
         notes,
-        totalAmount,
+        totalPrice,
       },
     });
 
@@ -65,6 +68,9 @@ const findByUser = async (userId) => {
       restaurant: {
         select: { name: true },
       },
+      driver: {
+        select: { name: true },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -84,6 +90,9 @@ const findById = async (orderId, userId) => {
       },
       user: {
         select: { id: true, name: true },
+      },
+      driver: {
+        select: { name: true },
       },
       items: {
         orderBy: { id: 'asc' },
@@ -112,6 +121,7 @@ const findAvailableForDriver = async () => {
   const orders = await prisma.order.findMany({
     where: {
       status: 'confirmed',
+      driverId: null,
     },
     include: {
       restaurant: {
@@ -134,14 +144,14 @@ const findAvailableForDriver = async () => {
 };
 
 const acceptOrder = async ({ orderId, driverId }) => {
-  void driverId;
-
   const result = await prisma.order.updateMany({
     where: {
       id: orderId,
       status: 'confirmed',
+      driverId: null,
     },
     data: {
+      driverId,
       status: 'preparing',
     },
   });
@@ -156,6 +166,9 @@ const acceptOrder = async ({ orderId, driverId }) => {
       },
       user: {
         select: { id: true, name: true },
+      },
+      driver: {
+        select: { name: true },
       },
       items: {
         orderBy: { id: 'asc' },
@@ -172,12 +185,11 @@ const acceptOrder = async ({ orderId, driverId }) => {
 };
 
 const findAssignedToDriver = async (driverId) => {
-  void driverId;
-
   const orders = await prisma.order.findMany({
     where: {
+      driverId,
       status: {
-        in: ['preparing', 'out_for_delivery', 'delivered'],
+        in: ['preparing', 'picked_up', 'out_for_delivery', 'delivered'],
       },
     },
     include: {
@@ -186,6 +198,9 @@ const findAssignedToDriver = async (driverId) => {
       },
       user: {
         select: { id: true, name: true },
+      },
+      driver: {
+        select: { name: true },
       },
       items: {
         orderBy: { id: 'asc' },
@@ -201,13 +216,12 @@ const findAssignedToDriver = async (driverId) => {
 };
 
 const updateDriverOrderStatus = async ({ orderId, driverId, status }) => {
-  void driverId;
-
   const result = await prisma.order.updateMany({
     where: {
       id: orderId,
+      driverId,
       status: {
-        not: 'pending',
+        in: ['preparing', 'picked_up', 'out_for_delivery'],
       },
     },
     data: {
@@ -225,6 +239,67 @@ const updateDriverOrderStatus = async ({ orderId, driverId, status }) => {
       },
       user: {
         select: { id: true, name: true },
+      },
+      driver: {
+        select: { name: true },
+      },
+      items: {
+        orderBy: { id: 'asc' },
+      },
+    },
+  });
+
+  return updated
+    ? {
+        ...formatOrder(updated),
+        customer_name: updated.user?.name || null,
+      }
+    : null;
+};
+
+const rejectAssignedOrder = async ({ orderId, driverId, reason = '' }) => {
+  // Driver can reject only before pickup; then order goes back to available queue.
+  const existing = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      driverId,
+      status: 'preparing',
+    },
+    select: { notes: true },
+  });
+
+  if (!existing) return null;
+
+  const reasonText = reason ? ` Reason: ${reason}` : '';
+  const rejectionNote = `[Driver Rejection] Driver reassigned.${reasonText}`;
+  const nextNotes = existing.notes ? `${existing.notes}\n${rejectionNote}` : rejectionNote;
+
+  const result = await prisma.order.updateMany({
+    where: {
+      id: orderId,
+      driverId,
+      status: 'preparing',
+    },
+    data: {
+      driverId: null,
+      status: 'confirmed',
+      notes: nextNotes,
+    },
+  });
+
+  if (result.count === 0) return null;
+
+  const updated = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      restaurant: {
+        select: { name: true },
+      },
+      user: {
+        select: { id: true, name: true },
+      },
+      driver: {
+        select: { name: true },
       },
       items: {
         orderBy: { id: 'asc' },
@@ -249,4 +324,5 @@ module.exports = {
   acceptOrder,
   findAssignedToDriver,
   updateDriverOrderStatus,
+  rejectAssignedOrder,
 };

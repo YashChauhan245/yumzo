@@ -15,6 +15,12 @@ import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import AvailableOrders from './pages/driver/AvailableOrders';
 import AssignedOrders from './pages/driver/AssignedOrders';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminRestaurants from './pages/admin/AdminRestaurants';
+import AdminMenu from './pages/admin/AdminMenu';
+import AdminOrders from './pages/admin/AdminOrders';
+
+const DASHBOARD_ALLOWED_EMAILS = ['yashchau.work@gmail.com'];
 
 function App() {
   return (
@@ -89,7 +95,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['customer']}>
+              <ProtectedRoute allowedRoles={['customer']} allowedEmails={DASHBOARD_ALLOWED_EMAILS}>
                 <Dashboard />
               </ProtectedRoute>
             }
@@ -117,6 +123,40 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['driver']}>
                 <AssignedOrders />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin-only routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['admin']} allowedEmails={DASHBOARD_ALLOWED_EMAILS}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/restaurants"
+            element={
+              <ProtectedRoute allowedRoles={['admin']} allowedEmails={DASHBOARD_ALLOWED_EMAILS}>
+                <AdminRestaurants />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/menu"
+            element={
+              <ProtectedRoute allowedRoles={['admin']} allowedEmails={DASHBOARD_ALLOWED_EMAILS}>
+                <AdminMenu />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedRoute allowedRoles={['admin']} allowedEmails={DASHBOARD_ALLOWED_EMAILS}>
+                <AdminOrders />
               </ProtectedRoute>
             }
           />

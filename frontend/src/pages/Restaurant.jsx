@@ -6,6 +6,11 @@ import EmptyState from '../components/ui/EmptyState';
 import { MenuSkeleton } from '../components/ui/Skeletons';
 import { cartAPI, getApiErrorMessage, restaurantsAPI } from '../services/api';
 
+const withFallbackImage = (event, fallbackSrc) => {
+  event.currentTarget.onerror = null;
+  event.currentTarget.src = fallbackSrc;
+};
+
 const Restaurant = () => {
   const { id } = useParams();
   const [restaurant, setRestaurant] = useState(null);
@@ -139,6 +144,7 @@ const Restaurant = () => {
                       alt={item.name}
                       className="h-32 w-full object-cover"
                       loading="lazy"
+                      onError={(event) => withFallbackImage(event, '/images/dishes/indian.png')}
                     />
                   ) : (
                     <div className="flex h-32 items-center justify-center text-3xl">🍲</div>

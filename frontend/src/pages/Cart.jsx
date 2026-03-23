@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
 import { CartSkeleton } from '../components/ui/Skeletons';
-import { cartAPI, getApiErrorMessage, ordersAPI } from '../services/api';
+import { cartAPI, getApiErrorMessage, ordersAPI, paymentsAPI } from '../services/api';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -79,8 +79,18 @@ const Cart = () => {
       const { data } = await ordersAPI.placeOrder({
         delivery_address: deliveryAddress.trim(),
       });
-      toast.success('Order placed successfully');
       const orderId = data?.data?.order?.id;
+
+      // Auto-confirm with COD so drivers receive this order in their available queue immediately.
+      if (orderId) {
+        await paymentsAPI.payOrder(orderId, {
+          payment_method: 'cash_on_delivery',
+          payment_details: 'Auto COD at checkout',
+        });
+      }
+
+      toast.success('Order placed and sent to nearby drivers');
+
       if (orderId) {
         navigate(`/orders?orderId=${orderId}`);
       } else {

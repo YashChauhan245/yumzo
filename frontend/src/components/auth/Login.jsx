@@ -39,7 +39,11 @@ const Login = () => {
     try {
       const loggedInUser = await login({ email: form.email, password: form.password });
       toast.success('Welcome back! 🎉');
-      const fallbackPath = loggedInUser?.role === 'driver' ? '/driver/dashboard' : '/';
+      const fallbackPath = loggedInUser?.role === 'driver'
+        ? '/driver/dashboard'
+        : loggedInUser?.role === 'admin'
+          ? '/admin/dashboard'
+          : '/';
       const nextPath = from === '/login' ? fallbackPath : from;
       navigate(nextPath || fallbackPath, { replace: true });
     } catch (err) {

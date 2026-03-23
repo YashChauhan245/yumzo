@@ -1,10 +1,11 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, param } = require('express-validator');
 const { authenticate, requireCustomer } = require('../middleware/auth');
 const { getAllRestaurants, getMenuByRestaurant } = require('../controllers/restaurantController');
 const { getCart, addToCart, updateQuantity, removeItem, clearCart } = require('../controllers/cartController');
 const { placeOrder, getOrderHistory, getOrder } = require('../controllers/orderController');
 const { handlePayment, getPaymentStatus } = require('../controllers/paymentController');
+const { getReels, toggleReelLike, getReelComments, addReelComment } = require('../controllers/reelController');
 
 const router = express.Router();
 
@@ -82,5 +83,23 @@ router.post(
   handlePayment,
 );
 router.get('/payments/:orderId', getPaymentStatus);
+
+// Customer features: reels feed, likes, comments.
+router.get('/reels', getReels);
+router.post('/reels/:reelId/like', [param('reelId').isUUID().withMessage('reelId must be a valid UUID')], toggleReelLike);
+router.get('/reels/:reelId/comments', [param('reelId').isUUID().withMessage('reelId must be a valid UUID')], getReelComments);
+router.post(
+  '/reels/:reelId/comments',
+  [
+    param('reelId').isUUID().withMessage('reelId must be a valid UUID'),
+    body('comment')
+      .trim()
+      .notEmpty()
+      .withMessage('comment is required')
+      .isLength({ min: 1, max: 280 })
+      .withMessage('comment must be between 1 and 280 characters'),
+  ],
+  addReelComment,
+);
 
 module.exports = router;

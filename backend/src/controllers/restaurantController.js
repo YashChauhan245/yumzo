@@ -10,6 +10,8 @@ const menuService = {
   findByRestaurant: prismaRestaurantService.findMenuByRestaurant,
 };
 
+const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 // GET /api/user/restaurants - list active restaurants for customers
 const getAllRestaurants = async (req, res) => {
   try {
@@ -30,6 +32,10 @@ const getAllRestaurants = async (req, res) => {
 const getMenuByRestaurant = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!isUuid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid restaurant id format' });
+    }
+
     const restaurantId = id;
 
     // Make sure the restaurant exists

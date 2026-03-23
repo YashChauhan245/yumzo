@@ -1,91 +1,109 @@
-# Yumzo - Full-Stack Food Delivery App
+# Yumzo - Full Stack Food Delivery Project
 
-Yumzo is a full-stack food delivery platform with customer ordering, driver delivery workflow, and short food reels.
+Yumzo is a resume-ready food delivery app built with React, Node.js, Express, Prisma, and Supabase PostgreSQL.
 
-## Project Overview
+It includes three major roles:
 
-- Customer app: browse restaurants, add to cart, place and track orders, complete payments.
-- Driver app: login, view available orders, accept delivery, update order status.
-- Reels: authenticated feed with likes and comments.
-- Backend uses a role-based API structure with separate namespaces:
-	- `/api/user/*`
-	- `/api/driver/*`
-	- `/api/reels/*`
+- Customer: browse restaurants, place orders, track status.
+- Driver: accept and manage delivery requests.
+- Admin: manage restaurants, menu, orders, and platform stats.
+
+## What Is Implemented
+
+### Customer Side
+
+- Auth flow with JWT (signup/login/me).
+- Restaurant listing and restaurant menu pages.
+- Cart flow: add, update, remove, clear.
+- Place order and see order history.
+- Payment endpoint integration (mock gateway).
+- Order status notifications (polling-based).
+
+### Driver Side
+
+- Dedicated driver login.
+- Available orders queue.
+- Accept order.
+- Reject assigned order with reason.
+- Assigned orders lifecycle updates:
+  - preparing -> picked_up -> out_for_delivery -> delivered
+- Rejection puts the order back to queue for other drivers.
+
+### Admin Side
+
+- Dashboard cards and chart-style UI widgets.
+- Manage restaurants (create, edit, delete).
+- Manage menu items (create, edit, delete).
+- Orders overview and status updates.
+- Cancel order flow with reason capture (saved in notes).
+
+### Reels
+
+- Authenticated reels feed.
+- Like/unlike and comments.
+
+## Architecture Notes
+
+- Backend API namespaces:
+  - /api/auth/*
+  - /api/user/*
+  - /api/driver/*
+  - /api/admin/*
+- Code structure follows simple controller + service layering.
+- Supabase PostgreSQL is accessed through Prisma Client.
+- Legacy DB compatibility handling is included in backend scripts.
 
 ## Tech Stack
 
 ### Frontend
-- React 19 + Vite
+
+- React 19
+- Vite
 - React Router
 - Axios
 - Tailwind CSS v4
-- GSAP (used in reels interactions)
+- react-hot-toast
 
 ### Backend
-- Node.js + Express
+
+- Node.js
+- Express
 - Prisma ORM
-- PostgreSQL (Supabase-hosted)
-- JWT authentication
-- bcryptjs
+- PostgreSQL (Supabase)
+- JWT + bcryptjs
 - express-validator
 - Socket.io
 
-### Database
-- Main DB engine: PostgreSQL
-- Hosted on: Supabase
-- Accessed via: Prisma Client
-
-## Key Features
-
-### Customer
-- Signup/Login with JWT
-- Browse restaurants and menus
-- Cart add/update/remove/clear
-- Place orders and view order history
-- Payment processing (mock gateway)
-
-### Driver
-- Dedicated driver login
-- Available orders list
-- Accept order
-- Assigned orders list
-- Update delivery status (`picked_up`, `out_for_delivery`, `delivered`)
-
-### Reels
-- Authenticated reels feed
-- Toggle like
-- View/add comments
-
-## Folder Structure (Simplified)
+## Project Structure (Simplified)
 
 ```txt
 yumzo/
-	backend/
-		prisma/
-			schema.prisma
-		src/
-			config/
-			controllers/
-			middleware/
-			routes/
-			services/
-			db/
-			server.js
+  backend/
+    prisma/
+      schema.prisma
+    src/
+      config/
+      controllers/
+      middleware/
+      routes/
+      services/
+      db/
+      scripts/
+      server.js
 
-	frontend/
-		src/
-			components/
-			context/
-			pages/
-				driver/
-			services/
-			styles/
-			App.jsx
+  frontend/
+    src/
+      components/
+      context/
+      pages/
+      services/
+      styles/
+      App.jsx
 ```
 
 ## Local Setup
 
-### 1. Install dependencies
+### 1) Install dependencies
 
 ```bash
 npm install
@@ -93,9 +111,9 @@ npm --prefix backend install
 npm --prefix frontend install
 ```
 
-### 2. Configure environment variables
+### 2) Backend env
 
-Create `backend/.env`:
+Create backend/.env:
 
 ```env
 DATABASE_URL=your_supabase_postgres_connection_string
@@ -105,69 +123,119 @@ JWT_EXPIRES_IN=7d
 JWT_REFRESH_SECRET=your_refresh_token_secret
 JWT_REFRESH_EXPIRES_IN=30d
 ALLOWED_ORIGINS=http://localhost:5173
+ADMIN_EMAIL=owner@example.com
 ```
 
-Create `frontend/.env`:
+Admin access note:
+
+- ADMIN_EMAIL is enforced for admin role checks.
+- Gmail-style canonical matching is handled in role checks.
+
+### 3) Frontend env
+
+Create frontend/.env:
 
 ```env
 VITE_API_URL=/api
 ```
 
-### 3. Prisma setup
+### 4) Prisma and database setup
 
 ```bash
 npm --prefix backend run prisma:generate
 npm --prefix backend run prisma:push
 ```
 
-Optional seed data:
+If you are using an older DB state, run:
+
+```bash
+npm --prefix backend run db:compat
+```
+
+Optional seeds:
 
 ```bash
 npm --prefix backend run seed:demo
 npm --prefix backend run seed:reels
 ```
 
-### 4. Run backend and frontend
+### 5) Run app
 
 ```bash
-npm run dev:backend
-npm run dev:frontend
+npm --prefix backend run dev
+npm --prefix frontend run dev
 ```
 
-- Backend: `http://localhost:5000`
-- Frontend: `http://localhost:5173`
+- Backend: <http://localhost:5000>
+- Frontend: <http://localhost:5173>
 
-## Basic API Overview
+## Useful Scripts
+
+### Root Scripts
+
+- npm run dev:backend
+- npm run dev:frontend
+- npm run build
+
+### Backend Scripts
+
+- npm run dev
+- npm run seed:demo
+- npm run seed:reels
+- npm run db:compat
+- npm run smoke:roles
+- npm run prisma:generate
+- npm run prisma:push
+
+### Frontend Scripts
+
+- npm run dev
+- npm run build
+- npm run lint
+- npm run preview
+
+## API Snapshot
 
 ### Auth
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
 
-### Customer APIs
-- `GET /api/user/restaurants`
-- `GET /api/user/restaurants/:id/menu`
-- `GET/POST/PUT/DELETE /api/user/cart...`
-- `POST /api/user/orders`
-- `GET /api/user/orders`
-- `GET /api/user/orders/:id`
-- `POST /api/user/payments/:orderId`
-- `GET /api/user/payments/:orderId`
+- POST /api/auth/signup
+- POST /api/auth/login
+- GET /api/auth/me
 
-### Driver APIs
-- `POST /api/driver/login`
-- `GET /api/driver/orders/available`
-- `POST /api/driver/orders/:orderId/accept`
-- `GET /api/driver/orders/assigned`
-- `PATCH /api/driver/orders/:orderId/status`
+### Customer
 
-### Reels APIs
-- `GET /api/reels`
-- `POST /api/reels/:reelId/like`
-- `GET /api/reels/:reelId/comments`
-- `POST /api/reels/:reelId/comments`
+- GET /api/user/restaurants
+- GET /api/user/restaurants/:id/menu
+- GET/POST/PUT/DELETE /api/user/cart...
+- POST /api/user/orders
+- GET /api/user/orders
+- GET /api/user/orders/:id
+- POST /api/user/payments/:orderId
+- GET /api/user/payments/:orderId
 
-## Notes
+### Driver
 
-- Customer and driver pages are role-protected in frontend routes.
-- The app is intentionally kept beginner-friendly with straightforward controller/service patterns.
+- POST /api/driver/login
+- GET /api/driver/orders/available
+- POST /api/driver/orders/:orderId/accept
+- POST /api/driver/orders/:orderId/reject
+- GET /api/driver/orders/assigned
+- PATCH /api/driver/orders/:orderId/status
+
+### Admin
+
+- GET /api/admin/dashboard
+- GET /api/admin/restaurants
+- POST /api/admin/restaurants
+- PUT /api/admin/restaurants/:restaurantId
+- DELETE /api/admin/restaurants/:restaurantId
+- GET /api/admin/menu
+- POST /api/admin/menu
+- PUT /api/admin/menu/:menuItemId
+- DELETE /api/admin/menu/:menuItemId
+- GET /api/admin/orders
+- PATCH /api/admin/orders/:orderId/status
+
+## Interview Prep
+
+For quick viva/interview revision, see INTERVIEW_PREP.md in the project root.

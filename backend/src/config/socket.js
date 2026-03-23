@@ -11,8 +11,14 @@ const emitOrderUpdate = (orderPayload) => {
   ioInstance.emit('order:created', orderPayload);
 };
 
+const emitOrderStatusUpdate = (orderPayload) => {
+  if (!ioInstance) return;
+  ioInstance.emit('order:status', orderPayload);
+};
+
 module.exports = {
   setSocketServer,
   getSocketServer,
   emitOrderUpdate,
+  emitOrderStatusUpdate,
 };

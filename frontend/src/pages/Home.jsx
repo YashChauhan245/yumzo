@@ -5,6 +5,11 @@ import EmptyState from '../components/ui/EmptyState';
 import { RestaurantSkeleton } from '../components/ui/Skeletons';
 import { restaurantsAPI } from '../services/api';
 
+const withFallbackImage = (event, fallbackSrc) => {
+  event.currentTarget.onerror = null;
+  event.currentTarget.src = fallbackSrc;
+};
+
 /* ─── Fallback restaurant data with images ───────── */
 const fallbackRestaurants = [
   {
@@ -103,6 +108,20 @@ const Home = () => {
     }
     return result;
   }, [restaurants, search, activeCuisine]);
+
+  const getFallbackRating = (name = '') => {
+    const options = ['4.2', '4.5', '4.8'];
+    const hash = String(name)
+      .split('')
+      .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return options[hash % options.length];
+  };
+
+  const getDisplayRating = (rating, restaurantName) => {
+    const parsed = Number(rating);
+    if (!Number.isFinite(parsed) || parsed <= 0) return getFallbackRating(restaurantName);
+    return parsed.toFixed(1);
+  };
 
   return (
     <AppLayout>
@@ -210,6 +229,7 @@ const Home = () => {
                       alt={restaurant.name}
                       className="h-44 w-full object-cover"
                       loading="lazy"
+                      onError={(event) => withFallbackImage(event, '/images/dishes/indian.png')}
                     />
                   ) : (
                     <div className="flex h-44 items-center justify-center bg-[#0B0B0B] text-4xl">🍽️</div>
@@ -222,7 +242,7 @@ const Home = () => {
                   </div>
                   <div className="absolute top-3 right-3">
                     <span className="flex items-center gap-1 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
-                      ★ {restaurant.rating || '4.5'}
+                      ★ {getDisplayRating(restaurant.rating, restaurant.name)}
                     </span>
                   </div>
 
@@ -252,7 +272,7 @@ const Home = () => {
 
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="flex h-2 w-2 rounded-full bg-[#D4D4D8]"></span>
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
                       <span className="text-xs text-[#A1A1AA]">Open now</span>
                     </div>
                     <Link
@@ -291,7 +311,13 @@ const Home = () => {
             { img: '/images/reels/reel6.png', title: 'Cheese Pull 🧀', views: '34K' },
           ].map((reel, i) => (
             <Link key={i} to="/reels" className="group relative aspect-9/14 overflow-hidden rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A]">
-              <img src={reel.img} alt={reel.title} className="h-full w-full object-cover opacity-85 transition-opacity group-hover:opacity-100" loading="lazy" />
+              <img
+                src={reel.img}
+                alt={reel.title}
+                className="h-full w-full object-cover opacity-85 transition-opacity group-hover:opacity-100"
+                loading="lazy"
+                onError={(event) => withFallbackImage(event, '/images/restaurants/collage.png')}
+              />
               <div className="absolute bottom-0 left-0 right-0 p-3">
                 <p className="text-xs font-medium text-white">{reel.title}</p>
                 <div className="mt-1 flex items-center gap-1">

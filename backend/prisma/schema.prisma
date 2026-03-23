@@ -30,6 +30,7 @@ model User {
   restaurants      Restaurant[]
   cartItems        CartItem[]
   orders           Order[]            @relation("customerOrders")
+  assignedOrders   Order[]            @relation("driverOrders")
   payments         Payment[]
   reels            Reel[]
   reelLikes        ReelLike[]
@@ -123,9 +124,10 @@ model CartItem {
 model Order {
   id                  String         @id @default(uuid())
   userId              String         @map("user_id")
+  driverId            String?        @map("driver_id")
   restaurantId        String         @map("restaurant_id")
   status              String         @default("pending")
-  totalAmount         Decimal        @map("total_amount") @db.Decimal(10, 2)
+  totalPrice          Decimal        @map("total_amount") @db.Decimal(10, 2)
   deliveryAddress     String         @map("delivery_address")
   notes               String?
   qrSealCode          String?        @ignore
@@ -134,6 +136,7 @@ model Order {
   updatedAt           DateTime       @updatedAt @map("updated_at")
 
   user                User           @relation("customerOrders", fields: [userId], references: [id], onDelete: Cascade)
+  driver              User?          @relation("driverOrders", fields: [driverId], references: [id], onDelete: SetNull)
   restaurant          Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   items               OrderItem[]
   payment             Payment?

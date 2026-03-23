@@ -5,7 +5,7 @@ const {
   getMenuByRestaurant,
   addRestaurant,
 } = require('../controllers/restaurantController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -65,7 +65,7 @@ router.get('/:id/menu', getMenuByRestaurant);
 router.post(
   '/',
   authenticate,
-  authorize('admin', 'restaurant_owner'),
+  requireAdmin,
   restaurantValidation,
   addRestaurant,
 );

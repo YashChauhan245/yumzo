@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireCustomer } = require('../middleware/auth');
 const {
   getReels,
   toggleReelLike,
@@ -10,7 +10,7 @@ const {
 
 const router = express.Router();
 
-router.use(authenticate);
+router.use(authenticate, requireCustomer);
 
 const reelIdValidation = [
   param('reelId')

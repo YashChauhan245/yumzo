@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const { Prisma } = require('@prisma/client');
 
 const formatRestaurant = (r) => ({
   id: r.id,
@@ -30,27 +31,61 @@ const formatFood = (f) => ({
 });
 
 const findAllRestaurants = async ({ city, cuisine }) => {
-  const where = { isActive: true };
+  const cityFilter = city ? Prisma.sql` AND r.city ILIKE ${`%${city}%`}` : Prisma.empty;
+  const cuisineFilter = cuisine ? Prisma.sql` AND r.cuisine_type ILIKE ${`%${cuisine}%`}` : Prisma.empty;
 
-  if (city) where.city = { contains: city, mode: 'insensitive' };
-  if (cuisine) where.cuisineType = { contains: cuisine, mode: 'insensitive' };
+  const restaurants = await prisma.$queryRaw`
+    SELECT
+      r.id,
+      r.owner_id,
+      r.name,
+      r.description,
+      r.cuisine_type,
+      r.address,
+      r.city,
+      r.phone,
+      r.image_url,
+      r.rating,
+      r.is_active,
+      r.created_at,
+      r.updated_at,
+      u.name AS owner_name
+    FROM restaurants r
+    LEFT JOIN users u ON u.id = r.owner_id
+    WHERE r.is_active = true
+      AND r.owner_id IS NOT NULL
+      ${cityFilter}
+      ${cuisineFilter}
+    ORDER BY r.created_at DESC
+  `;
 
-  const restaurants = await prisma.restaurant.findMany({
-    where,
-    include: { owner: { select: { name: true } } },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  return restaurants.map(formatRestaurant);
+  return restaurants;
 };
 
 const findRestaurantById = async (id) => {
-  const restaurant = await prisma.restaurant.findUnique({
-    where: { id },
-    include: { owner: { select: { name: true } } },
-  });
+  const rows = await prisma.$queryRaw`
+    SELECT
+      r.id,
+      r.owner_id,
+      r.name,
+      r.description,
+      r.cuisine_type,
+      r.address,
+      r.city,
+      r.phone,
+      r.image_url,
+      r.rating,
+      r.is_active,
+      r.created_at,
+      r.updated_at,
+      u.name AS owner_name
+    FROM restaurants r
+    LEFT JOIN users u ON u.id = r.owner_id
+    WHERE r.id = CAST(${id} AS uuid) AND r.owner_id IS NOT NULL
+    LIMIT 1
+  `;
 
-  return restaurant ? formatRestaurant(restaurant) : null;
+  return rows[0] || null;
 };
 
 const createRestaurant = async ({ owner_id, name, description, cuisine_type, address, city, phone, image_url }) => {

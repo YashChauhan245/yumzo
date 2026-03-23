@@ -4,6 +4,37 @@ const prismaAuthService = require('../services/prismaAuthService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
 const authService = prismaAuthService;
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yashchau.work@gmail.com').trim().toLowerCase();
+
+const canonicalizeEmail = (email) => {
+  const normalized = String(email || '').trim().toLowerCase();
+  const [localPart, domain] = normalized.split('@');
+  if (!localPart || !domain) return normalized;
+
+  if (domain === 'gmail.com') {
+    // Gmail ignores dots in local-part and strips +tags.
+    const baseLocal = localPart.split('+')[0].replace(/\./g, '');
+    return `${baseLocal}@${domain}`;
+  }
+
+  return normalized;
+};
+
+const toAppRole = (role) => (role === 'delivery_agent' ? 'driver' : role);
+
+// If ADMIN_EMAIL is configured, only that email is treated as admin in app tokens/responses.
+const resolveEffectiveRole = ({ email, role }) => {
+  const normalizedRole = toAppRole(role);
+  const normalizedEmail = canonicalizeEmail(email);
+  const canonicalAdminEmail = canonicalizeEmail(ADMIN_EMAIL);
+
+  if (!ADMIN_EMAIL) return normalizedRole;
+
+  if (normalizedEmail === canonicalAdminEmail) return 'admin';
+  if (normalizedRole === 'admin') return 'customer';
+
+  return normalizedRole;
+};
 
 // POST /api/auth/signup
 const signup = async (req, res) => {
@@ -13,12 +44,13 @@ const signup = async (req, res) => {
   }
 
   const { name, email, password, phone, role } = req.body;
-  const normalizedRole = role === 'delivery_agent' ? 'driver' : role;
-  const dbRole = normalizedRole === 'driver' ? 'delivery_agent' : (normalizedRole || 'customer');
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedRole = role === 'delivery_agent' ? 'driver' : (role || 'customer');
+  const dbRole = normalizedRole === 'driver' ? 'delivery_agent' : normalizedRole;
 
   try {
     // Check if email is already registered
-    const existing = await authService.findByEmail(email);
+    const existing = await authService.findByEmail(normalizedEmail);
     if (existing) {
       return res.status(409).json({ success: false, message: 'Email is already registered' });
     }
@@ -27,7 +59,7 @@ const signup = async (req, res) => {
 
     const user = await authService.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       phone: phone || null,
       role: dbRole,
@@ -35,7 +67,7 @@ const signup = async (req, res) => {
 
     const responseUser = {
       ...user,
-      role: dbRole === 'delivery_agent' ? 'driver' : dbRole,
+      role: resolveEffectiveRole({ email: user.email, role: dbRole }),
     };
 
     const tokenPayload = { id: user.id, email: user.email, role: responseUser.role };
@@ -61,9 +93,10 @@ const login = async (req, res) => {
   }
 
   const { email, password } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
 
   try {
-    const user = await authService.findByEmail(email);
+    const user = await authService.findByEmail(normalizedEmail);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
@@ -77,14 +110,14 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
-    const normalizedRole = user.role === 'delivery_agent' ? 'driver' : user.role;
-    const tokenPayload = { id: user.id, email: user.email, role: normalizedRole };
+    const effectiveRole = resolveEffectiveRole(user);
+    const tokenPayload = { id: user.id, email: user.email, role: effectiveRole };
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
     // Don't send the password hash in the response
     const { password: _pw, ...publicUser } = user;
-    publicUser.role = normalizedRole;
+    publicUser.role = effectiveRole;
 
     return res.status(200).json({
       success: true,
@@ -104,7 +137,12 @@ const getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    return res.status(200).json({ success: true, data: { user } });
+    const safeUser = {
+      ...user,
+      role: resolveEffectiveRole(user),
+    };
+
+    return res.status(200).json({ success: true, data: { user: safeUser } });
   } catch (err) {
     console.error('GetMe error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });

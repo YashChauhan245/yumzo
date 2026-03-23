@@ -1,7 +1,20 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+const canonicalizeEmail = (email) => {
+  const normalized = String(email || '').trim().toLowerCase();
+  const [localPart, domain] = normalized.split('@');
+  if (!localPart || !domain) return normalized;
+
+  if (domain === 'gmail.com') {
+    const baseLocal = localPart.split('+')[0].replace(/\./g, '');
+    return `${baseLocal}@${domain}`;
+  }
+
+  return normalized;
+};
+
+const ProtectedRoute = ({ children, allowedRoles = [], allowedEmails = [] }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -18,8 +31,17 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    const redirectPath = user.role === 'driver' ? '/driver/dashboard' : '/';
+    const redirectPath = user.role === 'driver' ? '/driver/dashboard' : user.role === 'admin' ? '/admin/dashboard' : '/';
     return <Navigate to={redirectPath} replace />;
+  }
+
+  if (allowedEmails.length > 0) {
+    const normalizedAllowedEmails = allowedEmails.map((email) => canonicalizeEmail(email));
+    const currentUserEmail = canonicalizeEmail(user?.email || '');
+    if (!normalizedAllowedEmails.includes(currentUserEmail)) {
+      const redirectPath = user.role === 'customer' ? '/' : '/login';
+      return <Navigate to={redirectPath} replace />;
+    }
   }
 
   return children;

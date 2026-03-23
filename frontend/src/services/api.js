@@ -73,15 +73,30 @@ export const driverAPI = {
   login: (payload) => api.post('/driver/login', payload),
   getAvailableOrders: () => api.get('/driver/orders/available'),
   acceptOrder: (orderId) => api.post(`/driver/orders/${orderId}/accept`),
+  rejectOrder: (orderId, payload = {}) => api.post(`/driver/orders/${orderId}/reject`, payload),
   getAssignedOrders: () => api.get('/driver/orders/assigned'),
   updateOrderStatus: (orderId, status) => api.patch(`/driver/orders/${orderId}/status`, { status }),
 };
 
 export const reelsAPI = {
-  getFeed: () => api.get('/reels'),
-  toggleLike: (reelId) => api.post(`/reels/${reelId}/like`),
-  getComments: (reelId) => api.get(`/reels/${reelId}/comments`),
-  addComment: (reelId, payload) => api.post(`/reels/${reelId}/comments`, payload),
+  getFeed: () => api.get('/user/reels'),
+  toggleLike: (reelId) => api.post(`/user/reels/${reelId}/like`),
+  getComments: (reelId) => api.get(`/user/reels/${reelId}/comments`),
+  addComment: (reelId, payload) => api.post(`/user/reels/${reelId}/comments`, payload),
+};
+
+export const adminAPI = {
+  getDashboard: () => api.get('/admin/dashboard'),
+  getRestaurants: () => api.get('/admin/restaurants'),
+  createRestaurant: (payload) => api.post('/admin/restaurants', payload),
+  updateRestaurant: (restaurantId, payload) => api.put(`/admin/restaurants/${restaurantId}`, payload),
+  deleteRestaurant: (restaurantId) => api.delete(`/admin/restaurants/${restaurantId}`),
+  getMenuItems: (params = {}) => api.get('/admin/menu', { params }),
+  createMenuItem: (payload) => api.post('/admin/menu', payload),
+  updateMenuItem: (menuItemId, payload) => api.put(`/admin/menu/${menuItemId}`, payload),
+  deleteMenuItem: (menuItemId) => api.delete(`/admin/menu/${menuItemId}`),
+  getOrders: () => api.get('/admin/orders'),
+  updateOrderStatus: (orderId, status, payload = {}) => api.patch(`/admin/orders/${orderId}/status`, { status, ...payload }),
 };
 
 export const getApiErrorMessage = (error, fallback = 'Something went wrong. Please try again.') => {

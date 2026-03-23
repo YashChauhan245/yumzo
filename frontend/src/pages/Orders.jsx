@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AppLayout from '../components/layout/AppLayout';
@@ -11,7 +12,7 @@ const paymentMethods = [
   { label: 'Cash on delivery', value: 'cash_on_delivery' },
 ];
 
-const orderTimeline = ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered'];
+const orderTimeline = ['pending', 'confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'delivered'];
 
 const getDriverLocation = (orderId) => {
   const seed = orderId
@@ -38,12 +39,37 @@ const Orders = () => {
   const [payingOrderId, setPayingOrderId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [trackingOrderId, setTrackingOrderId] = useState('');
+  const previousOrdersRef = useRef(new Map());
 
-  const loadOrders = async () => {
+  const loadOrders = async (silent = false) => {
     setLoading(true);
     try {
       const { data } = await ordersAPI.getOrders();
-      setOrders(data?.data?.orders || []);
+      const nextOrders = data?.data?.orders || [];
+
+      if (silent) {
+        for (const order of nextOrders) {
+          const prev = previousOrdersRef.current.get(order.id);
+          if (!prev) continue;
+
+          if (prev.status !== order.status) {
+            toast.success(`Order ${order.id.slice(0, 8)} status updated: ${order.status.replaceAll('_', ' ')}`);
+          }
+
+          const hasNewRejectionNote =
+            order.status === 'confirmed'
+            && order.notes
+            && order.notes.includes('[Driver Rejection]')
+            && prev.notes !== order.notes;
+
+          if (hasNewRejectionNote) {
+            toast.error('Driver rejected your order. Reassigning to another nearby driver.');
+          }
+        }
+      }
+
+      previousOrdersRef.current = new Map(nextOrders.map((order) => [order.id, order]));
+      setOrders(nextOrders);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to load orders.'));
       setOrders([]);
@@ -54,6 +80,12 @@ const Orders = () => {
 
   useEffect(() => {
     loadOrders();
+
+    const interval = setInterval(() => {
+      loadOrders(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const pendingCount = useMemo(() => orders.filter((o) => o.status === 'pending').length, [orders]);
@@ -176,7 +208,7 @@ const Orders = () => {
               </div>
 
               <div className="mt-3 grid gap-2 text-sm text-[#A1A1AA] sm:grid-cols-2">
-                <p>Total: ₹{Number(order.total_amount).toFixed(2)}</p>
+                <p>Total: ₹{Number(order.total_price ?? order.total_amount ?? 0).toFixed(2)}</p>
                 <p>Date: {new Date(order.created_at).toLocaleString()}</p>
                 <p className="sm:col-span-2">Address: {order.delivery_address}</p>
               </div>

@@ -1,5 +1,20 @@
 const { verifyAccessToken } = require('../utils/jwt');
 
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yashchau.work@gmail.com').trim().toLowerCase();
+
+const canonicalizeEmail = (email) => {
+  const normalized = String(email || '').trim().toLowerCase();
+  const [localPart, domain] = normalized.split('@');
+  if (!localPart || !domain) return normalized;
+
+  if (domain === 'gmail.com') {
+    const baseLocal = localPart.split('+')[0].replace(/\./g, '');
+    return `${baseLocal}@${domain}`;
+  }
+
+  return normalized;
+};
+
 const normalizeRole = (role) => {
   if (role === 'delivery_agent') return 'driver';
   return role;
@@ -54,10 +69,32 @@ const requireCustomer = authorize('customer');
 // Convenience middleware for routes scoped to driver APIs.
 const requireDriver = authorize('driver', 'delivery_agent');
 
+// Convenience middleware for routes scoped to admin APIs.
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  const userRole = normalizeRole(req.user.role);
+  const userEmail = canonicalizeEmail(req.user.email);
+  const canonicalAdminEmail = canonicalizeEmail(ADMIN_EMAIL);
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ success: false, message: 'You do not have permission to perform this action' });
+  }
+
+  if (ADMIN_EMAIL && userEmail !== canonicalAdminEmail) {
+    return res.status(403).json({ success: false, message: 'Admin access is restricted for this account' });
+  }
+
+  return next();
+};
+
 module.exports = {
   authenticate,
   authorize,
   requireCustomer,
   requireDriver,
+  requireAdmin,
   normalizeRole,
 };

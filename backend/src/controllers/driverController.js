@@ -3,10 +3,9 @@ const bcrypt = require('bcryptjs');
 const prismaAuthService = require('../services/prismaAuthService');
 const prismaOrderService = require('../services/prismaOrderService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
+const { emitOrderStatusUpdate } = require('../config/socket');
 
 const DRIVER_STATUSES = ['picked_up', 'out_for_delivery', 'delivered'];
-
-const normalizeDriverStatusForDb = (status) => (status === 'picked_up' ? 'preparing' : status);
 
 // POST /api/driver/login - login endpoint restricted to driver role.
 const loginDriver = async (req, res) => {
@@ -95,6 +94,14 @@ const acceptOrder = async (req, res) => {
       });
     }
 
+    emitOrderStatusUpdate({
+      id: order.id,
+      user_id: order.user_id,
+      driver_id: order.driver_id,
+      status: order.status,
+      updated_at: new Date().toISOString(),
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Order accepted successfully',
@@ -102,6 +109,48 @@ const acceptOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('acceptOrder error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// POST /api/driver/orders/:orderId/reject - release assigned order back to queue.
+const rejectOrder = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ success: false, errors: errors.array() });
+  }
+
+  try {
+    const reason = String(req.body?.reason || '').trim();
+
+    const order = await prismaOrderService.rejectAssignedOrder({
+      orderId: req.params.orderId,
+      driverId: req.user.id,
+      reason,
+    });
+
+    if (!order) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only preparing assigned orders can be rejected',
+      });
+    }
+
+    emitOrderStatusUpdate({
+      id: order.id,
+      user_id: order.user_id,
+      driver_id: order.driver_id,
+      status: order.status,
+      updated_at: new Date().toISOString(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order rejected and returned to available queue',
+      data: { order },
+    });
+  } catch (error) {
+    console.error('rejectOrder error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
@@ -139,12 +188,10 @@ const updateAssignedOrderStatus = async (req, res) => {
       });
     }
 
-    const dbStatus = normalizeDriverStatusForDb(status);
-
     const order = await prismaOrderService.updateDriverOrderStatus({
       orderId: req.params.orderId,
       driverId: req.user.id,
-      status: dbStatus,
+      status,
     });
 
     if (!order) {
@@ -153,6 +200,14 @@ const updateAssignedOrderStatus = async (req, res) => {
         message: 'Assigned order not found',
       });
     }
+
+    emitOrderStatusUpdate({
+      id: order.id,
+      user_id: order.user_id,
+      driver_id: order.driver_id,
+      status: order.status,
+      updated_at: new Date().toISOString(),
+    });
 
     return res.status(200).json({
       success: true,
@@ -169,6 +224,7 @@ module.exports = {
   loginDriver,
   getAvailableOrders,
   acceptOrder,
+  rejectOrder,
   getAssignedOrders,
   updateAssignedOrderStatus,
 };

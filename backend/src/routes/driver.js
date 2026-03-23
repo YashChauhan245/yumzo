@@ -6,6 +6,7 @@ const {
   loginDriver,
   getAvailableOrders,
   acceptOrder,
+  rejectOrder,
   getAssignedOrders,
   updateAssignedOrderStatus,
 } = require('../controllers/driverController');
@@ -26,6 +27,18 @@ const orderIdValidation = [
 
 router.get('/orders/available', getAvailableOrders);
 router.post('/orders/:orderId/accept', orderIdValidation, acceptOrder);
+router.post(
+  '/orders/:orderId/reject',
+  [
+    ...orderIdValidation,
+    body('reason')
+      .optional({ nullable: true, checkFalsy: true })
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('reason must be 200 characters or fewer'),
+  ],
+  rejectOrder,
+);
 router.get('/orders/assigned', getAssignedOrders);
 router.patch(
   '/orders/:orderId/status',

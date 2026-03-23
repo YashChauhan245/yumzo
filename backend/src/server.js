@@ -11,12 +11,8 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const driverRoutes = require('./routes/driver');
-const restaurantRoutes = require('./routes/restaurants');
-const cartRoutes = require('./routes/cart');
-const orderRoutes = require('./routes/orders');
-const paymentRoutes = require('./routes/payments');
+const adminRoutes = require('./routes/admin');
 const uploadRoutes = require('./routes/uploads');
-const reelRoutes = require('./routes/reels');
 const { setSocketServer } = require('./config/socket');
 
 const app = express();
@@ -89,12 +85,8 @@ app.get('/health', (_req, res) =>
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/driver', driverRoutes);
-app.use('/api/restaurants', restaurantRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/uploads', uploadRoutes);
-app.use('/api/reels', reelRoutes);
 
 // 404 handler
 app.use((_req, res) =>
@@ -140,6 +132,16 @@ const start = async () => {
     });
 
     setSocketServer(io);
+
+    httpServer.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`Port ${PORT} is already in use. Yumzo API is likely already running.`);
+        process.exit(0);
+      }
+
+      console.error('Failed to bind server port:', err);
+      process.exit(1);
+    });
 
     httpServer.listen(PORT, () => {
       console.log(` Yumzo API running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
