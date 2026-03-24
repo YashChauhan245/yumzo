@@ -42,6 +42,35 @@ It includes three major roles:
 - Authenticated reels feed.
 - Like/unlike and comments.
 
+### Recent Final Improvements
+
+- Pagination added with simple page + limit approach:
+  - Restaurants list
+  - Customer order history
+  - Reels feed
+  - Admin restaurants list
+  - Admin menu list
+  - Admin orders list
+- Address management added for customers:
+  - Save address
+  - Update address
+  - Delete address
+  - Mark default address
+  - Select saved address during checkout
+- Ratings and reviews added:
+  - One review per user per restaurant
+  - 1-5 star rating with optional text review
+  - Average rating displayed in restaurant UI
+- Driver UX improvements:
+  - Cleaner card-based dashboard sections for available and assigned orders
+  - Clear Accept and Deliver actions
+- Customer order tracking improvements:
+  - Better order progress timeline in UI
+- UI cleanup:
+  - Consistent minimal dark theme
+  - Reduced visual noise on driver pages
+- Lightweight backend tests added for helper logic and address controller paths.
+
 ## Architecture Notes
 
 - Backend API namespaces:
@@ -186,6 +215,7 @@ npm --prefix frontend run dev
 - npm run smoke:roles
 - npm run prisma:generate
 - npm run prisma:push
+- npm run test
 
 ### Frontend Scripts
 
@@ -206,10 +236,16 @@ npm --prefix frontend run dev
 
 - GET /api/user/restaurants
 - GET /api/user/restaurants/:id/menu
+- GET /api/user/restaurants/:id/reviews
+- POST /api/user/restaurants/:id/reviews
 - GET/POST/PUT/DELETE /api/user/cart...
 - POST /api/user/orders
 - GET /api/user/orders
 - GET /api/user/orders/:id
+- GET /api/user/addresses
+- POST /api/user/addresses
+- PUT /api/user/addresses/:addressId
+- DELETE /api/user/addresses/:addressId
 - POST /api/user/payments/:orderId
 - GET /api/user/payments/:orderId
 
@@ -239,3 +275,21 @@ npm --prefix frontend run dev
 ## Interview Prep
 
 For quick viva/interview revision, see INTERVIEW_PREP.md in the project root.
+
+## 60-Second Interview Pitch
+
+Yumzo is a full-stack food delivery platform built with React, Node.js, Express, Prisma, and PostgreSQL.
+It supports Customer, Driver, and Admin roles with JWT-based authentication and role-based route protection.
+
+On the customer side, users can browse restaurants, manage cart, place orders, make mock payments,
+track order progress, save delivery addresses, and submit restaurant ratings/reviews.
+
+On the driver side, delivery partners can accept available orders, update delivery states,
+and reject assignments with reasons when needed.
+
+On the admin side, platform operations include restaurant/menu management,
+order lifecycle control, and dashboard monitoring.
+
+I also implemented practical product-quality improvements like pagination,
+address management, average rating updates, reusable UI patterns,
+and lightweight backend tests for key utility/controller paths.

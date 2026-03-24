@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import { adminAPI, getApiErrorMessage } from '../../services/api';
 import RejectReasonModal from '../../components/ui/RejectReasonModal';
+import PaginationControls from '../../components/ui/PaginationControls';
 
-const statusOptions = ['pending', 'confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'delivered', 'cancelled'];
+const getStatusOptionsForOrder = (currentStatus) => {
+  if (currentStatus === 'pending') return ['pending', 'confirmed', 'cancelled'];
+  if (currentStatus === 'confirmed') return ['confirmed', 'cancelled'];
+  return [currentStatus];
+};
 const cancellationReasons = [
   'Customer requested cancellation',
   'Restaurant closed',
@@ -21,22 +26,37 @@ export default function AdminOrders() {
   const [cancelOrderId, setCancelOrderId] = useState('');
   const [selectedReason, setSelectedReason] = useState(cancellationReasons[0]);
   const [customReason, setCustomReason] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async (requestedPage = page) => {
     setLoading(true);
     try {
-      const { data } = await adminAPI.getOrders();
+      const { data } = await adminAPI.getOrders({ page: requestedPage, limit: 8 });
       setOrders(data?.data?.orders || []);
+      setPagination(
+        data?.pagination || {
+          page: requestedPage,
+          totalPages: 1,
+          hasPrevPage: requestedPage > 1,
+          hasNextPage: false,
+        },
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to load orders'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    loadOrders(page);
+  }, [page, loadOrders]);
 
   const closeCancelModal = () => {
     setIsCancelModalOpen(false);
@@ -90,8 +110,12 @@ export default function AdminOrders() {
           <p className="text-sm text-[#A1A1AA]">No orders available.</p>
         ) : (
           <div className="space-y-3">
-            {orders.map((order) => (
-              <article key={order.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
+            {orders.map((order) => {
+              const statusOptions = getStatusOptionsForOrder(order.status);
+              const canEditStatus = statusOptions.length > 1;
+
+              return (
+                <article key={order.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
                 <div className="grid gap-3 md:grid-cols-[1fr_auto]">
                   <div>
                     <p className="font-medium text-white">Order: {order.id}</p>
@@ -104,7 +128,7 @@ export default function AdminOrders() {
                   <div className="flex items-center gap-2">
                     <select
                       value={order.status}
-                      disabled={savingOrderId === order.id}
+                      disabled={savingOrderId === order.id || !canEditStatus}
                       onChange={(e) => handleStatusChange(order.id, order.status, e.target.value)}
                       className="rounded-xl border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-2 text-sm text-white"
                     >
@@ -114,8 +138,19 @@ export default function AdminOrders() {
                     </select>
                   </div>
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
+
+            <PaginationControls
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              hasPrevPage={pagination.hasPrevPage}
+              hasNextPage={pagination.hasNextPage}
+              onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+              onNext={() => setPage((prev) => prev + 1)}
+              className="pt-2"
+            />
           </div>
         )}
 

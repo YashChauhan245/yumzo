@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import { adminAPI, getApiErrorMessage } from '../../services/api';
 import FormModal from '../../components/ui/FormModal';
 import { formFieldBaseClass, formFieldFullClass } from '../../components/ui/formFieldStyles';
+import PaginationControls from '../../components/ui/PaginationControls';
 
 const emptyRestaurantForm = {
   name: '',
@@ -20,22 +21,37 @@ export default function AdminRestaurants() {
   const [editingRestaurant, setEditingRestaurant] = useState(null);
   const [editForm, setEditForm] = useState(emptyRestaurantForm);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
 
-  const loadRestaurants = async () => {
+  const loadRestaurants = useCallback(async (requestedPage = page) => {
     setLoading(true);
     try {
-      const { data } = await adminAPI.getRestaurants();
+      const { data } = await adminAPI.getRestaurants({ page: requestedPage, limit: 8 });
       setRestaurants(data?.data?.restaurants || []);
+      setPagination(
+        data?.pagination || {
+          page: requestedPage,
+          totalPages: 1,
+          hasPrevPage: requestedPage > 1,
+          hasNextPage: false,
+        },
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to load restaurants'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [page]);
 
   useEffect(() => {
-    loadRestaurants();
-  }, []);
+    loadRestaurants(page);
+  }, [page, loadRestaurants]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -50,7 +66,7 @@ export default function AdminRestaurants() {
       await adminAPI.createRestaurant(form);
       toast.success('Restaurant created');
       setForm(emptyRestaurantForm);
-      await loadRestaurants();
+      await loadRestaurants(page);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to create restaurant'));
     } finally {
@@ -102,7 +118,7 @@ export default function AdminRestaurants() {
       });
       toast.success('Restaurant updated');
       closeEditModal();
-      await loadRestaurants();
+      await loadRestaurants(page);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to update restaurant'));
     } finally {
@@ -185,6 +201,16 @@ export default function AdminRestaurants() {
                 </div>
               </article>
             ))}
+
+            <PaginationControls
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              hasPrevPage={pagination.hasPrevPage}
+              hasNextPage={pagination.hasNextPage}
+              onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+              onNext={() => setPage((prev) => prev + 1)}
+              className="pt-2"
+            />
           </div>
         )}
       </section>

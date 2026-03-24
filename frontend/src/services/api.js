@@ -48,6 +48,15 @@ export const authAPI = {
 export const restaurantsAPI = {
   getAll: (params = {}) => api.get('/user/restaurants', { params }),
   getMenu: (restaurantId, params = {}) => api.get(`/user/restaurants/${restaurantId}/menu`, { params }),
+  getReviews: (restaurantId, params = {}) => api.get(`/user/restaurants/${restaurantId}/reviews`, { params }),
+  addReview: (restaurantId, payload) => api.post(`/user/restaurants/${restaurantId}/reviews`, payload),
+};
+
+export const addressesAPI = {
+  getAll: () => api.get('/user/addresses'),
+  add: (payload) => api.post('/user/addresses', payload),
+  update: (addressId, payload) => api.put(`/user/addresses/${addressId}`, payload),
+  remove: (addressId) => api.delete(`/user/addresses/${addressId}`),
 };
 
 export const cartAPI = {
@@ -60,8 +69,9 @@ export const cartAPI = {
 
 export const ordersAPI = {
   placeOrder: (payload) => api.post('/user/orders', payload),
-  getOrders: () => api.get('/user/orders'),
+  getOrders: (params = {}) => api.get('/user/orders', { params }),
   getOrder: (orderId) => api.get(`/user/orders/${orderId}`),
+  cancelOrder: (orderId, payload = {}) => api.patch(`/user/orders/${orderId}/cancel`, payload),
 };
 
 export const paymentsAPI = {
@@ -79,7 +89,7 @@ export const driverAPI = {
 };
 
 export const reelsAPI = {
-  getFeed: () => api.get('/user/reels'),
+  getFeed: (params = {}) => api.get('/user/reels', { params }),
   toggleLike: (reelId) => api.post(`/user/reels/${reelId}/like`),
   getComments: (reelId) => api.get(`/user/reels/${reelId}/comments`),
   addComment: (reelId, payload) => api.post(`/user/reels/${reelId}/comments`, payload),
@@ -87,7 +97,7 @@ export const reelsAPI = {
 
 export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
-  getRestaurants: () => api.get('/admin/restaurants'),
+  getRestaurants: (params = {}) => api.get('/admin/restaurants', { params }),
   createRestaurant: (payload) => api.post('/admin/restaurants', payload),
   updateRestaurant: (restaurantId, payload) => api.put(`/admin/restaurants/${restaurantId}`, payload),
   deleteRestaurant: (restaurantId) => api.delete(`/admin/restaurants/${restaurantId}`),
@@ -95,7 +105,7 @@ export const adminAPI = {
   createMenuItem: (payload) => api.post('/admin/menu', payload),
   updateMenuItem: (menuItemId, payload) => api.put(`/admin/menu/${menuItemId}`, payload),
   deleteMenuItem: (menuItemId) => api.delete(`/admin/menu/${menuItemId}`),
-  getOrders: () => api.get('/admin/orders'),
+  getOrders: (params = {}) => api.get('/admin/orders', { params }),
   updateOrderStatus: (orderId, status, payload = {}) => api.patch(`/admin/orders/${orderId}/status`, { status, ...payload }),
 };
 

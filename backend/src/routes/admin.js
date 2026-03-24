@@ -69,24 +69,46 @@ const orderStatusValidation = [
     .trim()
     .notEmpty()
     .withMessage('status is required')
-    .isIn(['pending', 'confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'delivered', 'cancelled'])
-    .withMessage('Invalid order status'),
+    .isIn(['pending', 'confirmed', 'cancelled'])
+    .withMessage('Admin can update only: pending, confirmed, cancelled'),
   body('reason').optional({ nullable: true }).isLength({ max: 200 }).withMessage('reason too long'),
 ];
 
 router.get('/dashboard', getDashboard);
 
-router.get('/restaurants', getRestaurants);
+router.get(
+  '/restaurants',
+  [
+    query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+    query('limit').optional().isInt({ min: 1 }).withMessage('limit must be a positive integer'),
+  ],
+  getRestaurants,
+);
 router.post('/restaurants', restaurantValidation, createRestaurant);
 router.put('/restaurants/:restaurantId', restaurantUpdateValidation, editRestaurant);
 router.delete('/restaurants/:restaurantId', param('restaurantId').isUUID().withMessage('restaurantId must be valid UUID'), removeRestaurant);
 
-router.get('/menu', query('restaurantId').optional().isUUID().withMessage('restaurantId must be valid UUID'), getMenuItems);
+router.get(
+  '/menu',
+  [
+    query('restaurantId').optional().isUUID().withMessage('restaurantId must be valid UUID'),
+    query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+    query('limit').optional().isInt({ min: 1 }).withMessage('limit must be a positive integer'),
+  ],
+  getMenuItems,
+);
 router.post('/menu', menuCreateValidation, createMenuItem);
 router.put('/menu/:menuItemId', menuUpdateValidation, editMenuItem);
 router.delete('/menu/:menuItemId', param('menuItemId').isUUID().withMessage('menuItemId must be valid UUID'), removeMenuItem);
 
-router.get('/orders', getOrdersOverview);
+router.get(
+  '/orders',
+  [
+    query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+    query('limit').optional().isInt({ min: 1 }).withMessage('limit must be a positive integer'),
+  ],
+  getOrdersOverview,
+);
 router.patch('/orders/:orderId/status', orderStatusValidation, updateOrderStatus);
 
 module.exports = router;

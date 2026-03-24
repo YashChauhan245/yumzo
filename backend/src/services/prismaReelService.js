@@ -11,23 +11,30 @@ const formatReel = (reel, currentUserId) => ({
   likedByMe: reel.likes?.some((like) => like.userId === currentUserId) || false,
 });
 
-const getFeed = async (currentUserId) => {
-  const reels = await prisma.reel.findMany({
-    include: {
-      user: { select: { name: true } },
-      likes: {
-        where: { userId: currentUserId },
-        select: { userId: true },
+const getFeed = async (currentUserId, { skip = 0, limit = 5 } = {}) => {
+  const [reels, total] = await Promise.all([
+    prisma.reel.findMany({
+      include: {
+        user: { select: { name: true } },
+        likes: {
+          where: { userId: currentUserId },
+          select: { userId: true },
+        },
+        _count: {
+          select: { likes: true, comments: true },
+        },
       },
-      _count: {
-        select: { likes: true, comments: true },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 30,
-  });
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.reel.count(),
+  ]);
 
-  return reels.map((reel) => formatReel(reel, currentUserId));
+  return {
+    rows: reels.map((reel) => formatReel(reel, currentUserId)),
+    total,
+  };
 };
 
 const toggleLike = async (reelId, userId) => {

@@ -61,7 +61,32 @@ const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null
   return formatOrder(order);
 };
 
-const findByUser = async (userId) => {
+const findByUser = async (userId, { skip = 0, limit = 10 } = {}) => {
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where: { userId },
+      include: {
+        restaurant: {
+          select: { name: true },
+        },
+        driver: {
+          select: { name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count({ where: { userId } }),
+  ]);
+
+  return {
+    rows: orders.map((order) => formatOrder(order)),
+    total,
+  };
+};
+
+const findByUserAll = async (userId) => {
   const orders = await prisma.order.findMany({
     where: { userId },
     include: {
@@ -315,9 +340,56 @@ const rejectAssignedOrder = async ({ orderId, driverId, reason = '' }) => {
     : null;
 };
 
+const cancelByUser = async ({ orderId, userId, reason = '' }) => {
+  const existing = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId,
+    },
+    select: {
+      id: true,
+      status: true,
+      notes: true,
+    },
+  });
+
+  if (!existing) return null;
+
+  if (!['pending', 'confirmed'].includes(existing.status)) {
+    const error = new Error('Only pending or confirmed orders can be cancelled');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+  const cancellationNote = trimmedReason
+    ? `[Customer Cancellation] ${trimmedReason}`
+    : '[Customer Cancellation] Cancelled by customer';
+  const nextNotes = existing.notes ? `${existing.notes}\n${cancellationNote}` : cancellationNote;
+
+  const updated = await prisma.order.update({
+    where: { id: existing.id },
+    data: {
+      status: 'cancelled',
+      notes: nextNotes,
+    },
+    include: {
+      restaurant: {
+        select: { name: true },
+      },
+      driver: {
+        select: { name: true },
+      },
+    },
+  });
+
+  return formatOrder(updated);
+};
+
 module.exports = {
   createOrder,
   findByUser,
+  findByUserAll,
   findById,
   updateStatus,
   findAvailableForDriver,
@@ -325,4 +397,5 @@ module.exports = {
   findAssignedToDriver,
   updateDriverOrderStatus,
   rejectAssignedOrder,
+  cancelByUser,
 };

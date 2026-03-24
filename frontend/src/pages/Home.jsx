@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
 import { RestaurantSkeleton } from '../components/ui/Skeletons';
+import PaginationControls from '../components/ui/PaginationControls';
 import { restaurantsAPI } from '../services/api';
 
 const withFallbackImage = (event, fallbackSrc) => {
@@ -75,23 +76,55 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCuisine, setActiveCuisine] = useState('All');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
-  const loadRestaurants = async () => {
+  const loadRestaurants = useCallback(async (requestedPage = 1) => {
     setLoading(true);
     try {
-      const { data } = await restaurantsAPI.getAll({});
+      const { data } = await restaurantsAPI.getAll({
+        page: requestedPage,
+        limit: 9,
+        cuisine: activeCuisine === 'All' ? undefined : activeCuisine,
+      });
       const apiRestaurants = data?.data?.restaurants || [];
+      const nextPagination = data?.pagination;
+
+      setPagination(
+        nextPagination || {
+          page: requestedPage,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: requestedPage > 1,
+        },
+      );
+
       setRestaurants(apiRestaurants.length > 0 ? apiRestaurants : fallbackRestaurants);
     } catch {
       setRestaurants(fallbackRestaurants);
+      setPagination({
+        page: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeCuisine]);
 
   useEffect(() => {
-    loadRestaurants();
-  }, []);
+    loadRestaurants(page);
+  }, [page, loadRestaurants]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeCuisine]);
 
   const filteredRestaurants = useMemo(() => {
     let result = restaurants;
@@ -153,7 +186,7 @@ const Home = () => {
               />
             </div>
             <button
-              onClick={loadRestaurants}
+              onClick={() => loadRestaurants(page)}
               className="rounded-xl bg-[#3A3A3A] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F]"
             >
               Refresh
@@ -216,8 +249,9 @@ const Home = () => {
             description="Try another cuisine or search term."
           />
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredRestaurants.map((restaurant) => (
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredRestaurants.map((restaurant) => (
               <article
                 key={restaurant.id}
                 className="restaurant-card group surface-card overflow-hidden rounded-2xl transition-colors"
@@ -285,8 +319,19 @@ const Home = () => {
                   </div>
                 </div>
               </article>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            <PaginationControls
+              page={pagination.page || page}
+              totalPages={pagination.totalPages || 1}
+              hasPrevPage={pagination.hasPrevPage && !loading}
+              hasNextPage={pagination.hasNextPage && !loading}
+              onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+              onNext={() => setPage((prev) => prev + 1)}
+              className="mt-6"
+            />
+          </>
         )}
       </section>
 

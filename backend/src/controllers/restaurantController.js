@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const prismaRestaurantService = require('../services/prismaRestaurantService');
+const { getPagination, buildPaginationMeta } = require('../utils/pagination');
 
 const restaurantService = {
   findAll: prismaRestaurantService.findAllRestaurants,
@@ -16,14 +17,101 @@ const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a
 const getAllRestaurants = async (req, res) => {
   try {
     const { city, cuisine } = req.query;
-    const restaurants = await restaurantService.findAll({ city, cuisine });
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 9, maxLimit: 30 });
+    const { rows, total } = await restaurantService.findAll({ city, cuisine, skip, limit });
+
     return res.status(200).json({
       success: true,
-      count: restaurants.length,
-      data: { restaurants },
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: { restaurants: rows },
     });
   } catch (err) {
     console.error('getAllRestaurants error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// POST /api/user/restaurants/:id/reviews - create/update restaurant review from current user
+const addOrUpdateRestaurantReview = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ success: false, errors: errors.array() });
+  }
+
+  try {
+    const { id } = req.params;
+    if (!isUuid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid restaurant id format' });
+    }
+
+    const restaurant = await restaurantService.findById(id);
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    }
+
+    const rating = Number(req.body.rating);
+    const reviewText = req.body.review_text?.trim() || null;
+
+    const review = await prismaRestaurantService.upsertReview({
+      restaurantId: id,
+      userId: req.user.id,
+      rating,
+      reviewText,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Review saved successfully',
+      data: {
+        review: {
+          id: review.id,
+          restaurant_id: review.restaurantId,
+          user_id: review.userId,
+          rating: review.rating,
+          review_text: review.reviewText,
+          created_at: review.createdAt,
+          updated_at: review.updatedAt,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('addOrUpdateRestaurantReview error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// GET /api/user/restaurants/:id/reviews - paginated reviews for one restaurant
+const getRestaurantReviews = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!isUuid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid restaurant id format' });
+    }
+
+    const restaurant = await restaurantService.findById(id);
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    }
+
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 5, maxLimit: 20 });
+    const { rows, total, averageRating } = await prismaRestaurantService.findReviewsByRestaurant({
+      restaurantId: id,
+      skip,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: {
+        reviews: rows,
+        average_rating: Number(averageRating.toFixed(1)),
+      },
+    });
+  } catch (err) {
+    console.error('getRestaurantReviews error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
@@ -96,4 +184,10 @@ const addRestaurant = async (req, res) => {
   }
 };
 
-module.exports = { getAllRestaurants, getMenuByRestaurant, addRestaurant };
+module.exports = {
+  getAllRestaurants,
+  getMenuByRestaurant,
+  addRestaurant,
+  addOrUpdateRestaurantReview,
+  getRestaurantReviews,
+};

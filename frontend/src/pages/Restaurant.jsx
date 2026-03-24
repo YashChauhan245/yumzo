@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
 import { MenuSkeleton } from '../components/ui/Skeletons';
+import PaginationControls from '../components/ui/PaginationControls';
 import { cartAPI, getApiErrorMessage, restaurantsAPI } from '../services/api';
 
 const withFallbackImage = (event, fallbackSrc) => {
@@ -19,6 +20,18 @@ const Restaurant = () => {
   const [category, setCategory] = useState('');
   const [foodType, setFoodType] = useState('all');
   const [addingItemId, setAddingItemId] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsPagination, setReviewsPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const loadMenu = useCallback(async (selectedCategory = category) => {
     setLoading(true);
@@ -41,6 +54,29 @@ const Restaurant = () => {
     loadMenu(category);
   }, [category, loadMenu]);
 
+  const loadReviews = useCallback(async (requestedPage = 1) => {
+    try {
+      const { data } = await restaurantsAPI.getReviews(id, { page: requestedPage, limit: 5 });
+      setReviews(data?.data?.reviews || []);
+      setAverageRating(Number(data?.data?.average_rating || 0));
+      setReviewsPagination(
+        data?.pagination || {
+          page: requestedPage,
+          totalPages: 1,
+          hasPrevPage: requestedPage > 1,
+          hasNextPage: false,
+        },
+      );
+    } catch {
+      setReviews([]);
+      setAverageRating(Number(restaurant?.rating || 0));
+    }
+  }, [id, restaurant?.rating]);
+
+  useEffect(() => {
+    loadReviews(reviewsPage);
+  }, [reviewsPage, loadReviews]);
+
   const categories = useMemo(() => {
     const set = new Set(menuItems.map((item) => item.category).filter(Boolean));
     return ['All', ...Array.from(set)];
@@ -60,6 +96,7 @@ const Restaurant = () => {
     setAddingItemId(menuItemId);
     try {
       await cartAPI.addItem({ menu_item_id: menuItemId, quantity: 1 });
+      window.dispatchEvent(new Event('cart:updated'));
       toast.success('Item added to cart');
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Could not add item to cart.'));
@@ -68,11 +105,32 @@ const Restaurant = () => {
     }
   };
 
+  const handleSubmitReview = async () => {
+    setSubmittingReview(true);
+    try {
+      await restaurantsAPI.addReview(id, {
+        rating: Number(reviewRating),
+        review_text: reviewText.trim() || undefined,
+      });
+      toast.success('Review saved');
+      setReviewText('');
+      await Promise.all([loadReviews(1), loadMenu(category)]);
+      setReviewsPage(1);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not submit review.'));
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   return (
     <AppLayout>
       <section className="surface-card rounded-2xl p-6 md:p-7">
         <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">{restaurant?.name || 'Restaurant menu'}</h1>
         <p className="mt-2 text-sm text-[#A1A1AA]">{restaurant?.description || 'Explore available dishes and add your favorites to cart.'}</p>
+        <p className="mt-2 text-sm text-[#D4D4D8]">
+          Average rating: {(Number.isFinite(averageRating) && averageRating > 0 ? averageRating : Number(restaurant?.rating || 0)).toFixed(1)} / 5
+        </p>
 
         <div className="mt-5 flex flex-wrap gap-2">
           {categories.map((value) => {
@@ -179,6 +237,74 @@ const Restaurant = () => {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+        <article className="surface-card rounded-2xl p-5">
+          <h2 className="text-lg font-semibold text-white">Customer reviews</h2>
+          {reviews.length === 0 ? (
+            <p className="mt-3 text-sm text-[#A1A1AA]">No reviews yet. Be the first to rate this restaurant.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {reviews.map((review) => (
+                <div key={review.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">{review.user_name}</p>
+                    <p className="text-xs text-[#A1A1AA]">{review.rating}/5</p>
+                  </div>
+                  {review.review_text ? <p className="mt-1 text-sm text-[#D4D4D8]">{review.review_text}</p> : null}
+                </div>
+              ))}
+
+              <PaginationControls
+                page={reviewsPagination.page}
+                totalPages={reviewsPagination.totalPages}
+                hasPrevPage={reviewsPagination.hasPrevPage}
+                hasNextPage={reviewsPagination.hasNextPage}
+                onPrev={() => setReviewsPage((prev) => Math.max(1, prev - 1))}
+                onNext={() => setReviewsPage((prev) => prev + 1)}
+              />
+            </div>
+          )}
+        </article>
+
+        <article className="surface-card rounded-2xl p-5">
+          <h2 className="text-lg font-semibold text-white">Rate this restaurant</h2>
+          <p className="mt-1 text-sm text-[#A1A1AA]">You can update your rating anytime.</p>
+
+          <div className="mt-4">
+            <label className="mb-1 block text-sm font-medium text-white">Rating</label>
+            <select
+              value={reviewRating}
+              onChange={(e) => setReviewRating(Number(e.target.value))}
+              className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white"
+            >
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <option key={rating} value={rating}>{rating} / 5</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-3">
+            <label className="mb-1 block text-sm font-medium text-white">Review (optional)</label>
+            <textarea
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              rows={4}
+              maxLength={300}
+              placeholder="Write your experience"
+              className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white"
+            />
+          </div>
+
+          <button
+            onClick={handleSubmitReview}
+            disabled={submittingReview}
+            className="mt-4 rounded-xl bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#2F2F2F] disabled:opacity-60"
+          >
+            {submittingReview ? 'Saving...' : 'Submit review'}
+          </button>
+        </article>
       </section>
     </AppLayout>
   );

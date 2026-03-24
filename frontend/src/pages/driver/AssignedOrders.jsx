@@ -18,7 +18,7 @@ const statusLabelMap = {
 };
 
 const statusClassMap = {
-  preparing: 'border-amber-600/30 bg-amber-500/15 text-amber-300',
+  preparing: 'border-zinc-600/30 bg-zinc-500/15 text-zinc-300',
   picked_up: 'border-blue-600/30 bg-blue-500/15 text-blue-300',
   out_for_delivery: 'border-indigo-600/30 bg-indigo-500/15 text-indigo-300',
   delivered: 'border-emerald-600/30 bg-emerald-500/15 text-emerald-300',
@@ -125,7 +125,7 @@ export default function AssignedOrders() {
           </Link>
         </div>
 
-        <section className="mb-5 rounded-2xl border border-[#2A2A2A] bg-[radial-gradient(circle_at_15%_30%,rgba(99,102,241,0.16),transparent_38%),radial-gradient(circle_at_85%_20%,rgba(34,197,94,0.14),transparent_35%),#151515] p-4 md:p-5">
+        <section className="mb-5 rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4 md:p-5">
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">Total Assigned</p>
@@ -183,7 +183,7 @@ export default function AssignedOrders() {
 
                   <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#0B0B0B]">
                     <div
-                      className="h-full rounded-full bg-linear-to-r from-[#3B82F6] to-[#22C55E]"
+                      className="h-full rounded-full bg-[#3A3A3A]"
                       style={{ width: `${progressByStatus[order.status] ?? 0}%` }}
                     />
                   </div>

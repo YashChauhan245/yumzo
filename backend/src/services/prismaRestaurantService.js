@@ -30,9 +30,18 @@ const formatFood = (f) => ({
   created_at: f.createdAt,
 });
 
-const findAllRestaurants = async ({ city, cuisine }) => {
+const findAllRestaurants = async ({ city, cuisine, skip = 0, limit = 10 }) => {
   const cityFilter = city ? Prisma.sql` AND r.city ILIKE ${`%${city}%`}` : Prisma.empty;
   const cuisineFilter = cuisine ? Prisma.sql` AND r.cuisine_type ILIKE ${`%${cuisine}%`}` : Prisma.empty;
+
+  const [{ count }] = await prisma.$queryRaw`
+    SELECT COUNT(*)::int AS count
+    FROM restaurants r
+    WHERE r.is_active = true
+      AND r.owner_id IS NOT NULL
+      ${cityFilter}
+      ${cuisineFilter}
+  `;
 
   const restaurants = await prisma.$queryRaw`
     SELECT
@@ -57,9 +66,14 @@ const findAllRestaurants = async ({ city, cuisine }) => {
       ${cityFilter}
       ${cuisineFilter}
     ORDER BY r.created_at DESC
+    OFFSET ${skip}
+    LIMIT ${limit}
   `;
 
-  return restaurants;
+  return {
+    rows: restaurants,
+    total: count || 0,
+  };
 };
 
 const findRestaurantById = async (id) => {
@@ -140,10 +154,80 @@ const createMenuItem = async ({ restaurant_id, name, description, price, categor
   return formatFood(food);
 };
 
+const upsertReview = async ({ restaurantId, userId, rating, reviewText }) => {
+  const review = await prisma.restaurantReview.upsert({
+    where: {
+      userId_restaurantId: {
+        userId,
+        restaurantId,
+      },
+    },
+    update: {
+      rating,
+      reviewText,
+    },
+    create: {
+      userId,
+      restaurantId,
+      rating,
+      reviewText,
+    },
+  });
+
+  const stats = await prisma.restaurantReview.aggregate({
+    where: { restaurantId },
+    _avg: { rating: true },
+  });
+
+  await prisma.restaurant.update({
+    where: { id: restaurantId },
+    data: {
+      rating: Number(stats._avg.rating || 0),
+    },
+  });
+
+  return review;
+};
+
+const findReviewsByRestaurant = async ({ restaurantId, skip = 0, limit = 10 }) => {
+  const [reviews, total, avg] = await Promise.all([
+    prisma.restaurantReview.findMany({
+      where: { restaurantId },
+      include: {
+        user: {
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.restaurantReview.count({ where: { restaurantId } }),
+    prisma.restaurantReview.aggregate({ where: { restaurantId }, _avg: { rating: true } }),
+  ]);
+
+  return {
+    rows: reviews.map((review) => ({
+      id: review.id,
+      user_id: review.userId,
+      user_name: review.user?.name || 'User',
+      restaurant_id: review.restaurantId,
+      rating: review.rating,
+      review_text: review.reviewText,
+      created_at: review.createdAt,
+      updated_at: review.updatedAt,
+    })),
+    total,
+    averageRating: Number(avg._avg.rating || 0),
+  };
+};
+
 module.exports = {
   findAllRestaurants,
   findRestaurantById,
   createRestaurant,
   findMenuByRestaurant,
   createMenuItem,
+  upsertReview,
+  findReviewsByRestaurant,
 };

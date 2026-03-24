@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { cartAPI } from '../../services/api';
 
 const DASHBOARD_ALLOWED_EMAILS = ['yashchau.work@gmail.com'];
 
@@ -76,6 +77,7 @@ const navItems = [
 ];
 
 const AppLayout = ({ children }) => {
+  const location = useLocation();
   const { user, logout } = useAuth();
   const roleLabel = user?.role === 'driver' || user?.role === 'delivery_agent' ? 'Driver' : 'Customer';
   const normalizedEmail = canonicalizeEmail(user?.email || '');
@@ -83,6 +85,23 @@ const AppLayout = ({ children }) => {
   const visibleNavItems = navItems.filter((item) => item.label !== 'Dashboard' || canAccessDashboard);
   const [theme] = useState('dark');
   const [scrolled, setScrolled] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  const loadCartItemCount = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      return 0;
+    }
+
+    try {
+      const { data } = await cartAPI.getCart();
+      const items = data?.data?.items || [];
+      const totalItems = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      return totalItems;
+    } catch {
+      return 0;
+    }
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -94,6 +113,33 @@ const AppLayout = ({ children }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    let isDisposed = false;
+
+    const syncCartCount = async () => {
+      const totalItems = await loadCartItemCount();
+      if (!isDisposed) {
+        setCartItemCount(totalItems);
+      }
+    };
+
+    void syncCartCount();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [location.pathname, loadCartItemCount]);
+
+  useEffect(() => {
+    const refreshCartCount = async () => {
+      const totalItems = await loadCartItemCount();
+      setCartItemCount(totalItems);
+    };
+
+    window.addEventListener('cart:updated', refreshCartCount);
+    return () => window.removeEventListener('cart:updated', refreshCartCount);
+  }, [loadCartItemCount]);
 
   return (
     <div className="theme-shell min-h-screen pb-20 md:pb-0" style={{ background: 'var(--bg-page)', color: 'var(--text-main)' }}>
@@ -128,7 +174,14 @@ const AppLayout = ({ children }) => {
                 }
               >
                 <span className="opacity-80">{item.icon}</span>
-                {item.label}
+                <span className="relative inline-flex items-center">
+                  {item.label}
+                  {item.label === 'Cart' && cartItemCount > 0 ? (
+                    <span className="ml-1 inline-flex min-w-4 items-center justify-center rounded-full bg-[#D4D4D8] px-1.5 py-0.5 text-[10px] font-bold text-[#0B0B0B]">
+                      {cartItemCount}
+                    </span>
+                  ) : null}
+                </span>
               </NavLink>
             ))}
           </nav>
@@ -175,7 +228,10 @@ const AppLayout = ({ children }) => {
               }
             >
               {item.icon}
-              <span className="text-[10px] font-semibold">{item.label}</span>
+              <span className="text-[10px] font-semibold">
+                {item.label}
+                {item.label === 'Cart' && cartItemCount > 0 ? ` (${cartItemCount})` : ''}
+              </span>
             </NavLink>
           ))}
         </div>

@@ -1,19 +1,24 @@
 const { validationResult } = require('express-validator');
 const prismaReelService = require('../services/prismaReelService');
+const { getPagination, buildPaginationMeta } = require('../utils/pagination');
 
 const getReels = async (req, res) => {
   try {
-    const reels = await prismaReelService.getFeed(req.user.id);
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 5, maxLimit: 20 });
+    const { rows, total } = await prismaReelService.getFeed(req.user.id, { skip, limit });
+
     return res.status(200).json({
       success: true,
-      count: reels.length,
-      data: { reels },
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: { reels: rows },
     });
   } catch (err) {
     if (err.code === 'P2021') {
       return res.status(200).json({
         success: true,
         count: 0,
+        pagination: buildPaginationMeta({ page: 1, limit: 5, total: 0 }),
         data: { reels: [] },
         message: 'Reels data is not initialized yet',
       });

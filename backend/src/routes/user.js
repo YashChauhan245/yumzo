@@ -1,11 +1,17 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { authenticate, requireCustomer } = require('../middleware/auth');
-const { getAllRestaurants, getMenuByRestaurant } = require('../controllers/restaurantController');
+const {
+  getAllRestaurants,
+  getMenuByRestaurant,
+  addOrUpdateRestaurantReview,
+  getRestaurantReviews,
+} = require('../controllers/restaurantController');
 const { getCart, addToCart, updateQuantity, removeItem, clearCart } = require('../controllers/cartController');
-const { placeOrder, getOrderHistory, getOrder } = require('../controllers/orderController');
+const { placeOrder, getOrderHistory, getOrder, cancelOrder } = require('../controllers/orderController');
 const { handlePayment, getPaymentStatus } = require('../controllers/paymentController');
 const { getReels, toggleReelLike, getReelComments, addReelComment } = require('../controllers/reelController');
+const { getAddresses, addAddress, editAddress, removeAddress } = require('../controllers/addressController');
 
 const router = express.Router();
 
@@ -15,6 +21,50 @@ router.use(authenticate, requireCustomer);
 // Customer features: browse restaurants and menu.
 router.get('/restaurants', getAllRestaurants);
 router.get('/restaurants/:id/menu', getMenuByRestaurant);
+router.get('/restaurants/:id/reviews', [param('id').isUUID().withMessage('restaurant id must be a valid UUID')], getRestaurantReviews);
+router.post(
+  '/restaurants/:id/reviews',
+  [
+    param('id').isUUID().withMessage('restaurant id must be a valid UUID'),
+    body('rating').isInt({ min: 1, max: 5 }).withMessage('rating must be between 1 and 5'),
+    body('review_text')
+      .optional({ nullable: true, checkFalsy: true })
+      .isLength({ max: 300 })
+      .withMessage('review_text must be 300 characters or fewer'),
+  ],
+  addOrUpdateRestaurantReview,
+);
+
+// Customer features: addresses.
+router.get('/addresses', getAddresses);
+router.post(
+  '/addresses',
+  [
+    body('label').optional({ nullable: true, checkFalsy: true }).isLength({ max: 50 }).withMessage('label must be 50 characters or fewer'),
+    body('line1').trim().notEmpty().withMessage('line1 is required'),
+    body('line2').optional({ nullable: true, checkFalsy: true }).isLength({ max: 120 }).withMessage('line2 must be 120 characters or fewer'),
+    body('city').trim().notEmpty().withMessage('city is required'),
+    body('state').optional({ nullable: true, checkFalsy: true }).isLength({ max: 80 }).withMessage('state must be 80 characters or fewer'),
+    body('postal_code').optional({ nullable: true, checkFalsy: true }).isLength({ max: 20 }).withMessage('postal_code must be 20 characters or fewer'),
+    body('is_default').optional().isBoolean().withMessage('is_default must be boolean'),
+  ],
+  addAddress,
+);
+router.put(
+  '/addresses/:addressId',
+  [
+    param('addressId').isUUID().withMessage('addressId must be a valid UUID'),
+    body('label').optional({ nullable: true, checkFalsy: true }).isLength({ max: 50 }).withMessage('label must be 50 characters or fewer'),
+    body('line1').optional().trim().notEmpty().withMessage('line1 cannot be empty'),
+    body('line2').optional({ nullable: true, checkFalsy: true }).isLength({ max: 120 }).withMessage('line2 must be 120 characters or fewer'),
+    body('city').optional().trim().notEmpty().withMessage('city cannot be empty'),
+    body('state').optional({ nullable: true, checkFalsy: true }).isLength({ max: 80 }).withMessage('state must be 80 characters or fewer'),
+    body('postal_code').optional({ nullable: true, checkFalsy: true }).isLength({ max: 20 }).withMessage('postal_code must be 20 characters or fewer'),
+    body('is_default').optional().isBoolean().withMessage('is_default must be boolean'),
+  ],
+  editAddress,
+);
+router.delete('/addresses/:addressId', [param('addressId').isUUID().withMessage('addressId must be a valid UUID')], removeAddress);
 
 // Customer features: cart.
 router.get('/cart', getCart);
@@ -52,10 +102,16 @@ router.delete('/cart', clearCart);
 router.post(
   '/orders',
   [
-    body('delivery_address')
-      .trim()
-      .notEmpty()
-      .withMessage('Delivery address is required'),
+    body('delivery_address').optional({ nullable: true, checkFalsy: true }).isString().withMessage('delivery_address must be a string'),
+    body('address_id').optional({ nullable: true, checkFalsy: true }).isUUID().withMessage('address_id must be a valid UUID'),
+    body().custom((value) => {
+      const hasDeliveryAddress = Boolean(value?.delivery_address && String(value.delivery_address).trim());
+      const hasAddressId = Boolean(value?.address_id && String(value.address_id).trim());
+      if (!hasDeliveryAddress && !hasAddressId) {
+        throw new Error('Either delivery_address or address_id is required');
+      }
+      return true;
+    }),
     body('notes')
       .optional({ nullable: true, checkFalsy: true })
       .isLength({ max: 500 })
@@ -65,6 +121,18 @@ router.post(
 );
 router.get('/orders', getOrderHistory);
 router.get('/orders/:id', getOrder);
+router.patch(
+  '/orders/:id/cancel',
+  [
+    param('id').isUUID().withMessage('id must be a valid UUID'),
+    body('reason')
+      .optional({ nullable: true, checkFalsy: true })
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('reason must be 200 characters or fewer'),
+  ],
+  cancelOrder,
+);
 
 // Customer features: payments.
 router.post(

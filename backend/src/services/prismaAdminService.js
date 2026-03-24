@@ -62,8 +62,9 @@ const getDashboardStats = async () => {
   };
 };
 
-const listRestaurants = async () => {
-  const restaurants = await prisma.$queryRaw`
+const listRestaurants = async ({ skip = 0, limit = 10 } = {}) => {
+  const [restaurants, totalRows] = await Promise.all([
+    prisma.$queryRaw`
     SELECT
       id,
       owner_id,
@@ -81,9 +82,16 @@ const listRestaurants = async () => {
     FROM restaurants
     WHERE owner_id IS NOT NULL
     ORDER BY created_at DESC
-  `;
+    OFFSET ${skip}
+    LIMIT ${limit}
+  `,
+    prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM restaurants WHERE owner_id IS NOT NULL`,
+  ]);
 
-  return restaurants;
+  return {
+    rows: restaurants,
+    total: totalRows?.[0]?.count || 0,
+  };
 };
 
 const createRestaurant = async ({ ownerId, name, description, cuisineType, address, city, phone, imageUrl }) => {
@@ -123,15 +131,23 @@ const deleteRestaurant = async (id) => {
   return { id };
 };
 
-const listMenuItems = async (restaurantId) => {
+const listMenuItems = async (restaurantId, { skip = 0, limit = 10 } = {}) => {
   const where = restaurantId ? { restaurantId } : {};
 
-  const items = await prisma.food.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-  });
+  const [items, total] = await Promise.all([
+    prisma.food.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.food.count({ where }),
+  ]);
 
-  return items.map(formatMenuItem);
+  return {
+    rows: items.map(formatMenuItem),
+    total,
+  };
 };
 
 const createMenuItem = async ({ restaurantId, name, description, price, category, imageUrl, isVeg, isAvailable }) => {
@@ -171,22 +187,54 @@ const deleteMenuItem = async (id) => {
   return { id };
 };
 
-const listOrders = async () => {
-  const orders = await prisma.order.findMany({
-    include: {
-      user: { select: { name: true } },
-      driver: { select: { name: true } },
-      restaurant: { select: { name: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+const listOrders = async ({ skip = 0, limit = 10 } = {}) => {
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      include: {
+        user: { select: { name: true } },
+        driver: { select: { name: true } },
+        restaurant: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count(),
+  ]);
 
-  return orders.map(formatOrder);
+  return {
+    rows: orders.map(formatOrder),
+    total,
+  };
 };
 
 const updateOrderStatus = async (orderId, status, reason) => {
   const existing = await prisma.order.findUnique({ where: { id: orderId } });
   if (!existing) return null;
+
+  if (['preparing', 'picked_up', 'out_for_delivery', 'delivered'].includes(status)) {
+    const error = new Error('Delivery-stage statuses must be updated by driver');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (status === 'confirmed' && existing.status !== 'pending') {
+    const error = new Error('Only pending orders can be confirmed by admin');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (status === 'pending' && existing.status !== 'pending') {
+    const error = new Error('Cannot move order back to pending from current status');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (status === 'cancelled' && !['pending', 'confirmed'].includes(existing.status)) {
+    const error = new Error('Only pending or confirmed orders can be cancelled by admin');
+    error.statusCode = 400;
+    throw error;
+  }
 
   const data = { status };
   if (status === 'cancelled') {

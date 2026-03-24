@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const prismaAdminService = require('../services/prismaAdminService');
+const { getPagination, buildPaginationMeta } = require('../utils/pagination');
 
 const getDashboard = async (_req, res) => {
   try {
@@ -11,10 +12,16 @@ const getDashboard = async (_req, res) => {
   }
 };
 
-const getRestaurants = async (_req, res) => {
+const getRestaurants = async (req, res) => {
   try {
-    const restaurants = await prismaAdminService.listRestaurants();
-    return res.status(200).json({ success: true, count: restaurants.length, data: { restaurants } });
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 8, maxLimit: 30 });
+    const { rows, total } = await prismaAdminService.listRestaurants({ skip, limit });
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: { restaurants: rows },
+    });
   } catch (error) {
     console.error('getRestaurants error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -112,8 +119,14 @@ const getMenuItems = async (req, res) => {
 
   try {
     const { restaurantId } = req.query;
-    const menuItems = await prismaAdminService.listMenuItems(restaurantId);
-    return res.status(200).json({ success: true, count: menuItems.length, data: { menuItems } });
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 8, maxLimit: 40 });
+    const { rows, total } = await prismaAdminService.listMenuItems(restaurantId, { skip, limit });
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: { menuItems: rows },
+    });
   } catch (error) {
     console.error('getMenuItems error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -216,10 +229,16 @@ const removeMenuItem = async (req, res) => {
   }
 };
 
-const getOrdersOverview = async (_req, res) => {
+const getOrdersOverview = async (req, res) => {
   try {
-    const orders = await prismaAdminService.listOrders();
-    return res.status(200).json({ success: true, count: orders.length, data: { orders } });
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 8, maxLimit: 40 });
+    const { rows, total } = await prismaAdminService.listOrders({ skip, limit });
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: { orders: rows },
+    });
   } catch (error) {
     console.error('getOrdersOverview error:', error);
     return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -244,6 +263,9 @@ const updateOrderStatus = async (req, res) => {
     return res.status(200).json({ success: true, message: 'Order status updated', data: { order } });
   } catch (error) {
     console.error('updateOrderStatus error:', error);
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, message: error.message });
+    }
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

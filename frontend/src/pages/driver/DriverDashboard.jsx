@@ -25,8 +25,14 @@ const getSparklinePath = (values, width = 240, height = 70, pad = 6) => {
 const statusBadgeClass = (status) => {
   if (status === 'delivered') return 'bg-emerald-500/15 text-emerald-300 border-emerald-600/30';
   if (status === 'out_for_delivery') return 'bg-blue-500/15 text-blue-300 border-blue-600/30';
-  if (status === 'picked_up') return 'bg-amber-500/15 text-amber-300 border-amber-600/30';
+  if (status === 'picked_up') return 'bg-cyan-500/15 text-cyan-300 border-cyan-600/30';
   return 'bg-zinc-500/15 text-zinc-300 border-zinc-600/30';
+};
+
+const nextStatusMap = {
+  preparing: 'picked_up',
+  picked_up: 'out_for_delivery',
+  out_for_delivery: 'delivered',
 };
 
 export default function DriverDashboard() {
@@ -35,17 +41,21 @@ export default function DriverDashboard() {
   const [assignedOrders, setAssignedOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const refreshOrders = async () => {
+    const [availableRes, assignedRes] = await Promise.all([
+      driverAPI.getAvailableOrders(),
+      driverAPI.getAssignedOrders(),
+    ]);
+
+    setAvailableOrders(availableRes?.data?.data?.orders || []);
+    setAssignedOrders(assignedRes?.data?.data?.orders || []);
+  };
+
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
       try {
-        const [availableRes, assignedRes] = await Promise.all([
-          driverAPI.getAvailableOrders(),
-          driverAPI.getAssignedOrders(),
-        ]);
-
-        setAvailableOrders(availableRes?.data?.data?.orders || []);
-        setAssignedOrders(assignedRes?.data?.data?.orders || []);
+        await refreshOrders();
       } catch (error) {
         toast.error(getApiErrorMessage(error, 'Failed to load driver dashboard'));
       } finally {
@@ -74,6 +84,29 @@ export default function DriverDashboard() {
     { label: 'Completed Today', value: completedOrders.length, helper: 'Successful drops' },
     { label: 'Weekly Earnings', value: `Rs ${revenueThisWeek}`, helper: 'Estimated' },
   ];
+
+  const handleAccept = async (orderId) => {
+    try {
+      await driverAPI.acceptOrder(orderId);
+      toast.success('Order accepted');
+      await refreshOrders();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not accept this order'));
+    }
+  };
+
+  const handleDeliverUpdate = async (order) => {
+    const nextStatus = nextStatusMap[order.status];
+    if (!nextStatus) return;
+
+    try {
+      await driverAPI.updateOrderStatus(order.id, nextStatus);
+      toast.success(`Order moved to ${nextStatus.replaceAll('_', ' ')}`);
+      await refreshOrders();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not update delivery status'));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] px-4 py-6 md:px-8">
@@ -121,13 +154,7 @@ export default function DriverDashboard() {
             </div>
 
             <svg viewBox="0 0 240 70" className="h-24 w-full" role="img" aria-label="Driver earnings trend">
-              <defs>
-                <linearGradient id="driverRevenue" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#60A5FA" />
-                  <stop offset="100%" stopColor="#22C55E" />
-                </linearGradient>
-              </defs>
-              <path d={getSparklinePath(mockEarnings)} fill="none" stroke="url(#driverRevenue)" strokeWidth="3" strokeLinecap="round" />
+              <path d={getSparklinePath(mockEarnings)} fill="none" stroke="#6B7280" strokeWidth="3" strokeLinecap="round" />
             </svg>
 
             <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] text-[#7E7E87]">
@@ -197,6 +224,54 @@ export default function DriverDashboard() {
                 </div>
               ))}
               {completedOrders.length === 0 ? <p className="text-sm text-[#A1A1AA]">No completed deliveries yet.</p> : null}
+            </div>
+          </article>
+        </section>
+
+        <section className="mt-5 grid gap-4 lg:grid-cols-2">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Available Orders</h2>
+              <span className="text-xs text-[#A1A1AA]">{availableOrders.length} open</span>
+            </div>
+
+            <div className="space-y-2">
+              {availableOrders.slice(0, 4).map((order) => (
+                <div key={order.id} className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] p-3">
+                  <p className="text-sm font-medium text-white">{order.restaurant_name || 'Restaurant'}</p>
+                  <p className="mt-1 text-xs text-[#8D8D97]">{order.delivery_address}</p>
+                  <button
+                    onClick={() => handleAccept(order.id)}
+                    className="mt-2 rounded-lg bg-[#3A3A3A] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2F2F2F]"
+                  >
+                    Accept
+                  </button>
+                </div>
+              ))}
+              {availableOrders.length === 0 ? <p className="text-sm text-[#A1A1AA]">No available orders right now.</p> : null}
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Assigned Orders</h2>
+              <span className="text-xs text-[#A1A1AA]">{activeOrders.length} active</span>
+            </div>
+
+            <div className="space-y-2">
+              {activeOrders.slice(0, 4).map((order) => (
+                <div key={order.id} className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] p-3">
+                  <p className="text-sm font-medium text-white">{order.restaurant_name || 'Restaurant'}</p>
+                  <p className="mt-1 text-xs text-[#8D8D97]">Status: {order.status.replaceAll('_', ' ')}</p>
+                  <button
+                    onClick={() => handleDeliverUpdate(order)}
+                    className="mt-2 rounded-lg bg-[#3A3A3A] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2F2F2F]"
+                  >
+                    Deliver
+                  </button>
+                </div>
+              ))}
+              {activeOrders.length === 0 ? <p className="text-sm text-[#A1A1AA]">No assigned orders yet.</p> : null}
             </div>
           </article>
         </section>

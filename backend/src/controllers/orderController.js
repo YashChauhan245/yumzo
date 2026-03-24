@@ -1,7 +1,9 @@
 const { validationResult } = require('express-validator');
 const prismaOrderService = require('../services/prismaOrderService');
 const prismaCartService = require('../services/prismaCartService');
-const { emitOrderUpdate } = require('../config/socket');
+const prismaAddressService = require('../services/prismaAddressService');
+const { getPagination, buildPaginationMeta } = require('../utils/pagination');
+const { emitOrderUpdate, emitOrderStatusUpdate } = require('../config/socket');
 
 // POST /api/user/orders - place an order from current cart items
 const placeOrder = async (req, res) => {
@@ -11,8 +13,26 @@ const placeOrder = async (req, res) => {
   }
 
   try {
-    const { delivery_address, notes } = req.body;
+    const { delivery_address, address_id, notes } = req.body;
     const userId = req.user.id;
+
+    let resolvedAddress = String(delivery_address || '').trim();
+    if (address_id) {
+      const selectedAddress = await prismaAddressService.findByIdForUser({
+        addressId: address_id,
+        userId,
+      });
+
+      if (!selectedAddress) {
+        return res.status(404).json({ success: false, message: 'Selected address not found' });
+      }
+
+      resolvedAddress = prismaAddressService.formatAddressText(selectedAddress);
+    }
+
+    if (!resolvedAddress) {
+      return res.status(400).json({ success: false, message: 'Delivery address is required' });
+    }
 
     // Load the user's cart
     const cartItems = await prismaCartService.getByUser(userId);
@@ -53,7 +73,7 @@ const placeOrder = async (req, res) => {
     const order = await prismaOrderService.createOrder({
       userId,
       restaurantId,
-      deliveryAddress: delivery_address,
+      deliveryAddress: resolvedAddress,
       notes,
       items,
     });
@@ -83,11 +103,14 @@ const placeOrder = async (req, res) => {
 // GET /api/user/orders - list order history for logged in user
 const getOrderHistory = async (req, res) => {
   try {
-    const orders = await prismaOrderService.findByUser(req.user.id);
+    const { page, limit, skip } = getPagination(req.query, { defaultLimit: 6, maxLimit: 30 });
+    const { rows, total } = await prismaOrderService.findByUser(req.user.id, { skip, limit });
+
     return res.status(200).json({
       success: true,
-      count: orders.length,
-      data: { orders },
+      count: rows.length,
+      pagination: buildPaginationMeta({ page, limit, total }),
+      data: { orders: rows },
     });
   } catch (err) {
     console.error('getOrderHistory error:', err);
@@ -109,4 +132,45 @@ const getOrder = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, getOrderHistory, getOrder };
+// PATCH /api/user/orders/:id/cancel - customer can cancel own pending/confirmed order
+const cancelOrder = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ success: false, errors: errors.array() });
+  }
+
+  try {
+    const reason = String(req.body?.reason || '').trim();
+    const order = await prismaOrderService.cancelByUser({
+      orderId: req.params.id,
+      userId: req.user.id,
+      reason,
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    emitOrderStatusUpdate({
+      id: order.id,
+      user_id: order.user_id,
+      driver_id: order.driver_id,
+      status: order.status,
+      updated_at: order.updated_at,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: { order },
+    });
+  } catch (err) {
+    console.error('cancelOrder error:', err);
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ success: false, message: err.message });
+    }
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+module.exports = { placeOrder, getOrderHistory, getOrder, cancelOrder };

@@ -64,7 +64,7 @@ export default function AvailableOrders() {
           </Link>
         </div>
 
-        <section className="mb-5 rounded-2xl border border-[#2A2A2A] bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.18),transparent_40%),radial-gradient(circle_at_85%_35%,rgba(34,197,94,0.15),transparent_40%),#151515] p-4 md:p-5">
+        <section className="mb-5 rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4 md:p-5">
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">Queue Size</p>

@@ -4,6 +4,7 @@ import AdminLayout from './AdminLayout';
 import { adminAPI, getApiErrorMessage } from '../../services/api';
 import FormModal from '../../components/ui/FormModal';
 import { formFieldBaseClass, formFieldFullClass } from '../../components/ui/formFieldStyles';
+import PaginationControls from '../../components/ui/PaginationControls';
 
 const emptyForm = {
   restaurant_id: '',
@@ -23,27 +24,46 @@ export default function AdminMenu() {
   const [editingItem, setEditingItem] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', price: '', category: '', is_veg: false });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
 
-  const loadData = useCallback(async (selectedRestaurantId = restaurantIdFilter) => {
+  const loadData = useCallback(async (selectedRestaurantId = restaurantIdFilter, requestedPage = page) => {
     setLoading(true);
     try {
       const [restaurantsRes, menuRes] = await Promise.all([
-        adminAPI.getRestaurants(),
-        adminAPI.getMenuItems(selectedRestaurantId ? { restaurantId: selectedRestaurantId } : {}),
+        adminAPI.getRestaurants({ page: 1, limit: 30 }),
+        adminAPI.getMenuItems(
+          selectedRestaurantId
+            ? { restaurantId: selectedRestaurantId, page: requestedPage, limit: 8 }
+            : { page: requestedPage, limit: 8 },
+        ),
       ]);
 
       setRestaurants(restaurantsRes?.data?.data?.restaurants || []);
       setMenuItems(menuRes?.data?.data?.menuItems || []);
+      setPagination(
+        menuRes?.data?.pagination || {
+          page: requestedPage,
+          totalPages: 1,
+          hasPrevPage: requestedPage > 1,
+          hasNextPage: false,
+        },
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to load menu management data'));
     } finally {
       setLoading(false);
     }
-  }, [restaurantIdFilter]);
+  }, [restaurantIdFilter, page]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadData(restaurantIdFilter, page);
+  }, [loadData, restaurantIdFilter, page]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -61,7 +81,7 @@ export default function AdminMenu() {
       });
       toast.success('Menu item added');
       setForm(emptyForm);
-      await loadData();
+      await loadData(restaurantIdFilter, page);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to add menu item'));
     } finally {
@@ -119,7 +139,7 @@ export default function AdminMenu() {
       });
       toast.success('Menu item updated');
       closeEditModal();
-      await loadData(restaurantIdFilter);
+      await loadData(restaurantIdFilter, page);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to update menu item'));
     } finally {
@@ -197,7 +217,8 @@ export default function AdminMenu() {
             onChange={(e) => {
               const nextValue = e.target.value;
               setRestaurantIdFilter(nextValue);
-              loadData(nextValue);
+              setPage(1);
+              loadData(nextValue, 1);
             }}
             className={formFieldBaseClass}
           >
@@ -238,6 +259,16 @@ export default function AdminMenu() {
                 </div>
               </article>
             ))}
+
+            <PaginationControls
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              hasPrevPage={pagination.hasPrevPage}
+              hasNextPage={pagination.hasNextPage}
+              onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+              onNext={() => setPage((prev) => prev + 1)}
+              className="pt-2"
+            />
           </div>
         )}
       </section>

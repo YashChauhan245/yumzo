@@ -40,6 +40,7 @@ model User {
   fraudEvents      FraudEvent[]
   deliveryProofs   DeliveryProof[]
   qrVerifications  QrSealVerification[]
+  restaurantReviews RestaurantReview[]
 
   @@map("users")
 }
@@ -80,8 +81,25 @@ model Restaurant {
   foods       Food[]
   orders      Order[]
   cartItems   CartItem[]
+  reviews     RestaurantReview[]
 
   @@map("restaurants")
+}
+
+model RestaurantReview {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  restaurantId  String      @map("restaurant_id")
+  rating        Int
+  reviewText    String?     @map("review_text")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, restaurantId])
+  @@map("restaurant_reviews")
 }
 
 model Food {

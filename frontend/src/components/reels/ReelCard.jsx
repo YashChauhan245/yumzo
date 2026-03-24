@@ -104,7 +104,19 @@ export default function ReelCard({ reel, isActive, onShare }) {
             aria-label="Like reel"
             className={`flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-xl transition-transform duration-200 hover:scale-105 ${likePulse ? 'scale-125' : 'scale-100'}`}
           >
-            <span className={reel.likedByMe ? 'text-red-500' : 'text-white'}>❤️</span>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill={reel.likedByMe ? 'currentColor' : 'none'}
+              className={reel.likedByMe ? 'text-red-500' : 'text-white'}
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
           </button>
           <span className="text-xs font-semibold text-white">{formatCount(reel.likeCount || 0)}</span>
 

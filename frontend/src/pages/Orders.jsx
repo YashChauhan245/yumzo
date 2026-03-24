@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
+import PaginationControls from '../components/ui/PaginationControls';
 import { getApiErrorMessage, ordersAPI, paymentsAPI } from '../services/api';
 
 const paymentMethods = [
@@ -13,6 +14,7 @@ const paymentMethods = [
 ];
 
 const orderTimeline = ['pending', 'confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'delivered'];
+const deliveryTimeline = ['preparing', 'picked_up', 'out_for_delivery', 'delivered'];
 
 const getDriverLocation = (orderId) => {
   const seed = orderId
@@ -37,15 +39,35 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState('');
+  const [cancellingOrderId, setCancellingOrderId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [trackingOrderId, setTrackingOrderId] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
   const previousOrdersRef = useRef(new Map());
 
-  const loadOrders = async (silent = false) => {
-    setLoading(true);
+  const loadOrders = useCallback(async (silent = false, requestedPage = page) => {
+    if (!silent) {
+      setLoading(true);
+    }
     try {
-      const { data } = await ordersAPI.getOrders();
+      const { data } = await ordersAPI.getOrders({ page: requestedPage, limit: 6 });
       const nextOrders = data?.data?.orders || [];
+      const nextPagination = data?.pagination;
+
+      setPagination(
+        nextPagination || {
+          page: requestedPage,
+          totalPages: 1,
+          hasPrevPage: requestedPage > 1,
+          hasNextPage: false,
+        },
+      );
 
       if (silent) {
         for (const order of nextOrders) {
@@ -74,19 +96,21 @@ const Orders = () => {
       toast.error(getApiErrorMessage(error, 'Failed to load orders.'));
       setOrders([]);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, [page]);
 
   useEffect(() => {
-    loadOrders();
+    loadOrders(false, page);
 
     const interval = setInterval(() => {
-      loadOrders(true);
+      loadOrders(true, page);
     }, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [page, loadOrders]);
 
   const pendingCount = useMemo(() => orders.filter((o) => o.status === 'pending').length, [orders]);
 
@@ -106,6 +130,19 @@ const Orders = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    setCancellingOrderId(orderId);
+    try {
+      await ordersAPI.cancelOrder(orderId);
+      toast.success('Order cancelled successfully');
+      await loadOrders();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to cancel order.'));
+    } finally {
+      setCancellingOrderId('');
+    }
+  };
+
   const statusClass = (status) => {
     if (status === 'pending') return 'bg-[#2A2A2A] text-[#A1A1AA]';
     if (status === 'confirmed') return 'bg-[#2A2A2A] text-[#A1A1AA]';
@@ -117,21 +154,26 @@ const Orders = () => {
     setTrackingOrderId((prev) => (prev === orderId ? '' : orderId));
   };
 
+  const getDeliveryTimelineStep = (status) => {
+    const idx = deliveryTimeline.indexOf(status);
+    return idx < 0 ? -1 : idx;
+  };
+
   const renderTrackingCard = (order) => {
     const location = getDriverLocation(order.id);
-    const currentStep = getCurrentTimelineStep(order.status);
+    const currentStep = getDeliveryTimelineStep(order.status);
 
     return (
-      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm font-semibold text-slate-800">Live tracking (demo)</p>
-        <p className="mt-1 text-xs text-slate-500">Assigned driver: Rahul Verma</p>
+      <div className="mt-4 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
+        <p className="text-sm font-semibold text-white">Delivery timeline</p>
+        <p className="mt-1 text-xs text-[#A1A1AA]">Assigned driver: Rahul Verma</p>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-5">
-          {orderTimeline.map((step, idx) => (
+          {deliveryTimeline.map((step, idx) => (
             <div
               key={step}
               className={`rounded-md px-2 py-1 text-center text-xs font-semibold ${
-                idx <= currentStep ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
+                idx <= currentStep ? 'bg-[#3A3A3A] text-white' : 'bg-[#1A1A1A] text-[#A1A1AA]'
               }`}
             >
               {step.replaceAll('_', ' ')}
@@ -139,7 +181,7 @@ const Orders = () => {
           ))}
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
+        <div className="mt-3 overflow-hidden rounded-lg border border-[#2A2A2A]">
           <iframe
             title={`order-map-${order.id}`}
             src={`https://www.google.com/maps?q=${location.lat},${location.lng}&z=13&output=embed`}
@@ -179,7 +221,7 @@ const Orders = () => {
       </section>
 
       <section className="mt-6 space-y-4">
-        {loading ? (
+        {loading && orders.length === 0 ? (
           <div className="surface-card rounded-2xl p-4 text-sm text-[#A1A1AA]">Loading orders...</div>
         ) : orders.length === 0 ? (
           <EmptyState
@@ -192,6 +234,7 @@ const Orders = () => {
           orders.map((order) => {
             const canTrack = order.status !== 'cancelled';
             const isTrackingThisOrder = trackingOrderId === order.id;
+            const canCancelByCustomer = ['pending', 'confirmed'].includes(order.status);
 
             return (
               <article
@@ -232,11 +275,52 @@ const Orders = () => {
                 </button>
               ) : null}
 
+              {canCancelByCustomer ? (
+                <button
+                  onClick={() => handleCancelOrder(order.id)}
+                  disabled={cancellingOrderId === order.id}
+                  className="mt-3 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#3A3A3A] disabled:opacity-60"
+                >
+                  {cancellingOrderId === order.id ? 'Cancelling order...' : 'Cancel order'}
+                </button>
+              ) : null}
+
+              <div className="mt-4 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#A1A1AA]">Order progress</p>
+                <div className="grid gap-2 sm:grid-cols-6">
+                  {orderTimeline.map((step) => {
+                    const reached = getCurrentTimelineStep(order.status) >= getCurrentTimelineStep(step);
+                    return (
+                      <div
+                        key={`${order.id}-${step}`}
+                        className={`rounded-md px-2 py-1 text-center text-[11px] font-medium ${
+                          reached ? 'bg-[#3A3A3A] text-white' : 'bg-[#1A1A1A] text-[#A1A1AA]'
+                        }`}
+                      >
+                        {step.replaceAll('_', ' ')}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {canTrack && isTrackingThisOrder ? renderTrackingCard(order) : null}
               </article>
             );
           })
         )}
+
+        {!loading && orders.length > 0 ? (
+          <PaginationControls
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            hasPrevPage={pagination.hasPrevPage}
+            hasNextPage={pagination.hasNextPage}
+            onPrev={() => setPage((prev) => Math.max(1, prev - 1))}
+            onNext={() => setPage((prev) => prev + 1)}
+            className="pt-2"
+          />
+        ) : null}
       </section>
     </AppLayout>
   );
