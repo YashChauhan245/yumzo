@@ -11,9 +11,12 @@ The main focus was complete order lifecycle handling, role-based access, and pra
 ## 2) Core Features You Can Explain
 
 - Customer can browse restaurants, manage cart, place orders, and track status.
+- Customer can also cancel own orders in early stages (pending/confirmed).
 - Driver can see available orders, accept, reject with reason, and update delivery stages.
-- Admin can manage restaurants, menu items, and orders from dashboard tools.
+- Admin can manage restaurants, menu items, and early-stage order decisions.
 - Reels module supports feed, likes, and comments.
+- Reels like button follows clear state UX (default white, liked red).
+- Cart nav shows live item count and updates immediately after add-to-cart.
 
 ## 3) Order Lifecycle (Important)
 
@@ -33,6 +36,11 @@ Admin cancellation path:
 
 - Admin sets status to cancelled with reason.
 - Reason is appended in order notes with admin cancellation tag.
+
+Customer cancellation path:
+
+- Customer can cancel only pending or confirmed orders.
+- Cancellation note is appended with customer cancellation tag.
 
 ## 4) Tech Stack (Why These Choices)
 
@@ -76,6 +84,10 @@ This keeps code beginner-friendly and easy to debug.
   - fixed with validation and safe handling.
 - Driver rejection needed operational flow:
   - added reject endpoint, reason capture, queue reassignment.
+- Loading flicker in Orders page during polling:
+  - fixed by separating first-load UI state from silent refresh state.
+- Confusing status ownership between admin and driver:
+  - tightened status handling so delivery-stage updates remain in driver workflow.
 
 ## 8) Interview Questions + Sample Answers
 
@@ -99,10 +111,15 @@ Q4. What happens when driver rejects an order?
 
 - Rejection reason is recorded, assignment is removed, status moves back so other drivers can pick it.
 
+Q5. How does customer cancellation work?
+
+- Customer can cancel only before delivery starts (pending/confirmed).
+- Backend validates ownership + allowed statuses and stores a cancellation note.
+
 Q5. What would you improve next?
 
 - Move more polling flows to socket listeners for true realtime.
-- Add unit/integration tests for lifecycle transitions.
+- Reintroduce unit/integration tests for lifecycle transitions (currently removed for a simpler beginner setup).
 - Add observability logs and dashboards.
 
 ## 9) Strength Points to Highlight in Resume Discussion
@@ -118,3 +135,4 @@ Q5. What would you improve next?
 - Remember why rejection/cancellation reasons are stored in notes.
 - Be ready to explain one bug and how you debugged it end-to-end.
 - Practice drawing the request flow from route to DB.
+- Mention current trade-off honestly: cleaner beginner-friendly code, but backend automated tests are not configured now.

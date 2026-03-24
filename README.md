@@ -66,10 +66,23 @@ It includes three major roles:
   - Clear Accept and Deliver actions
 - Customer order tracking improvements:
   - Better order progress timeline in UI
+- Customer order cancellation:
+  - Customer can cancel own order from Orders page
+  - Allowed only for pending and confirmed orders
+  - Cancellation reason (optional) is saved in notes
+- Order role responsibility tightened:
+  - Admin can manage early-stage order decisions (pending, confirmed, cancelled)
+  - Delivery stage statuses are handled from driver flow
 - UI cleanup:
   - Consistent minimal dark theme
   - Reduced visual noise on driver pages
-- Lightweight backend tests added for helper logic and address controller paths.
+- Reels UX update:
+  - Like icon is white by default and red when liked
+- Cart UX update:
+  - Cart nav button shows live item count and updates instantly after add-to-cart
+- Cleanup:
+  - Removed old backend test files for a simpler beginner-level setup
+  - Removed empty unused frontend folder
 
 ## Architecture Notes
 
@@ -217,6 +230,10 @@ npm --prefix frontend run dev
 - npm run prisma:push
 - npm run test
 
+Current note:
+
+- backend test script is a placeholder that prints: "No backend tests configured"
+
 ### Frontend Scripts
 
 - npm run dev
@@ -242,6 +259,7 @@ npm --prefix frontend run dev
 - POST /api/user/orders
 - GET /api/user/orders
 - GET /api/user/orders/:id
+- PATCH /api/user/orders/:id/cancel
 - GET /api/user/addresses
 - POST /api/user/addresses
 - PUT /api/user/addresses/:addressId
@@ -282,14 +300,14 @@ Yumzo is a full-stack food delivery platform built with React, Node.js, Express,
 It supports Customer, Driver, and Admin roles with JWT-based authentication and role-based route protection.
 
 On the customer side, users can browse restaurants, manage cart, place orders, make mock payments,
-track order progress, save delivery addresses, and submit restaurant ratings/reviews.
+track order progress, cancel eligible orders, save delivery addresses, and submit restaurant ratings/reviews.
 
 On the driver side, delivery partners can accept available orders, update delivery states,
 and reject assignments with reasons when needed.
 
 On the admin side, platform operations include restaurant/menu management,
-order lifecycle control, and dashboard monitoring.
+early-stage order lifecycle control, and dashboard monitoring.
 
 I also implemented practical product-quality improvements like pagination,
 address management, average rating updates, reusable UI patterns,
-and lightweight backend tests for key utility/controller paths.
+and cleaner role-based order handling.
