@@ -17,6 +17,8 @@ The main focus was complete order lifecycle handling, role-based access, and pra
 - Reels module supports feed, likes, and comments.
 - Reels like button follows clear state UX (default white, liked red).
 - Cart nav shows live item count and updates immediately after add-to-cart.
+- Group ordering room supports collaborative ordering with host-controlled checkout.
+- Smart combo (diet planning) suggests menu combinations based on user goals like high protein or budget.
 
 ## 3) Order Lifecycle (Important)
 
@@ -122,6 +124,19 @@ Q5. What would you improve next?
 - Reintroduce unit/integration tests for lifecycle transitions (currently removed for a simpler beginner setup).
 - Add observability logs and dashboards.
 
+Q6. How did you implement group ordering without over-complicating it?
+
+- I kept it beginner-friendly using straightforward room objects and clear host/member rules.
+- Members can add items, while host handles final checkout trigger.
+- The room summary makes split contribution visible, so flow is easy to explain in interviews.
+
+Q7. What is the diet planning feature in your app?
+
+- It is a smart combo suggestion API on restaurant menu data.
+- User selects a practical goal (like high protein, quick lunch, or budget target),
+  and backend returns a realistic combo with estimated total.
+- I designed it so it has a clear fallback logic, which is useful to explain reliability in interviews.
+
 ## 9) Strength Points to Highlight in Resume Discussion
 
 - Implemented complete multi-role workflow.
@@ -136,3 +151,5 @@ Q5. What would you improve next?
 - Be ready to explain one bug and how you debugged it end-to-end.
 - Practice drawing the request flow from route to DB.
 - Mention current trade-off honestly: cleaner beginner-friendly code, but backend automated tests are not configured now.
+- Prepare a 30-second explanation for group-order room lifecycle (create -> join -> add items -> host checkout).
+- Prepare a 30-second explanation for smart combo/diet planning logic and fallback behavior.

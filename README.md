@@ -18,6 +18,13 @@ It includes three major roles:
 - Place order and see order history.
 - Payment endpoint integration (mock gateway).
 - Order status notifications (polling-based).
+- Group ordering room flow:
+  - Create room and share room code
+  - Join room and add items collaboratively
+  - Host checkout control with split-bill style summary
+- Smart combo / diet planning flow:
+  - User can pick a goal (for example: high protein or budget under amount)
+  - Backend returns a practical combo suggestion from restaurant menu
 
 ### Driver Side
 
@@ -41,6 +48,9 @@ It includes three major roles:
 
 - Authenticated reels feed.
 - Like/unlike and comments.
+- Light mode visual polish:
+  - Softer video overlay contrast
+  - Brighter action pills with better readability on mobile
 
 ### Recent Final Improvements
 
@@ -260,6 +270,12 @@ Current note:
 - GET /api/user/orders
 - GET /api/user/orders/:id
 - PATCH /api/user/orders/:id/cancel
+- POST /api/user/group-orders/rooms
+- POST /api/user/group-orders/rooms/join
+- GET /api/user/group-orders/rooms/:roomCode
+- POST /api/user/group-orders/rooms/:roomCode/items
+- POST /api/user/group-orders/rooms/:roomCode/checkout
+- POST /api/user/restaurants/:id/smart-combo
 - GET /api/user/addresses
 - POST /api/user/addresses
 - PUT /api/user/addresses/:addressId
