@@ -4,33 +4,24 @@ const prismaAuthService = require('../services/prismaAuthService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
 const authService = prismaAuthService;
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'yashchau.work@gmail.com').trim().toLowerCase();
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || 'yashchau.work@gmail.com').trim().toLowerCase();
 
-const canonicalizeEmail = (email) => {
-  const normalized = String(email || '').trim().toLowerCase();
-  const [localPart, domain] = normalized.split('@');
-  if (!localPart || !domain) return normalized;
-
-  if (domain === 'gmail.com') {
-    // Gmail ignores dots in local-part and strips +tags.
-    const baseLocal = localPart.split('+')[0].replace(/\./g, '');
-    return `${baseLocal}@${domain}`;
-  }
-
-  return normalized;
-};
+// Keep email normalization very simple so it is easy to explain in interviews.
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
 const toAppRole = (role) => (role === 'delivery_agent' ? 'driver' : role);
 
-// If ADMIN_EMAIL is configured, only that email is treated as admin in app tokens/responses.
+// Rule used in this project:
+// 1) Only ADMIN_EMAIL gets admin access in token/response.
+// 2) If any other account has DB role=admin, we treat it as customer in app responses.
 const resolveEffectiveRole = ({ email, role }) => {
   const normalizedRole = toAppRole(role);
-  const normalizedEmail = canonicalizeEmail(email);
-  const canonicalAdminEmail = canonicalizeEmail(ADMIN_EMAIL);
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedAdminEmail = normalizeEmail(ADMIN_EMAIL);
 
   if (!ADMIN_EMAIL) return normalizedRole;
 
-  if (normalizedEmail === canonicalAdminEmail) return 'admin';
+  if (normalizedEmail === normalizedAdminEmail) return 'admin';
   if (normalizedRole === 'admin') return 'customer';
 
   return normalizedRole;
@@ -44,7 +35,7 @@ const signup = async (req, res) => {
   }
 
   const { name, email, password, phone, role } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   const normalizedRole = role === 'delivery_agent' ? 'driver' : (role || 'customer');
   const dbRole = normalizedRole === 'driver' ? 'delivery_agent' : normalizedRole;
 
@@ -93,7 +84,7 @@ const login = async (req, res) => {
   }
 
   const { email, password } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
 
   try {
     const user = await authService.findByEmail(normalizedEmail);

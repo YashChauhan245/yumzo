@@ -35,6 +35,8 @@ const nextStatusMap = {
   out_for_delivery: 'delivered',
 };
 
+const activeDeliveryStatuses = ['preparing', 'picked_up', 'out_for_delivery'];
+
 export default function DriverDashboard() {
   const { user, logout } = useAuth();
   const [availableOrders, setAvailableOrders] = useState([]);
@@ -42,11 +44,11 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
 
   const refreshOrders = async () => {
-    const [availableRes, assignedRes] = await Promise.all([
-      driverAPI.getAvailableOrders(),
-      driverAPI.getAssignedOrders(),
-    ]);
+    // Step 1: fetch available and assigned orders.
+    const availableRes = await driverAPI.getAvailableOrders();
+    const assignedRes = await driverAPI.getAssignedOrders();
 
+    // Step 2: update local state used by all dashboard cards.
     setAvailableOrders(availableRes?.data?.data?.orders || []);
     setAssignedOrders(assignedRes?.data?.data?.orders || []);
   };
@@ -67,7 +69,7 @@ export default function DriverDashboard() {
   }, []);
 
   const activeOrders = useMemo(
-    () => assignedOrders.filter((order) => ['preparing', 'picked_up', 'out_for_delivery'].includes(order.status)),
+    () => assignedOrders.filter((order) => activeDeliveryStatuses.includes(order.status)),
     [assignedOrders],
   );
 
@@ -87,6 +89,7 @@ export default function DriverDashboard() {
 
   const handleAccept = async (orderId) => {
     try {
+      // Accept order and then refresh dashboard counters/lists.
       await driverAPI.acceptOrder(orderId);
       toast.success('Order accepted');
       await refreshOrders();
@@ -100,6 +103,7 @@ export default function DriverDashboard() {
     if (!nextStatus) return;
 
     try {
+      // Move order to next valid delivery stage.
       await driverAPI.updateOrderStatus(order.id, nextStatus);
       toast.success(`Order moved to ${nextStatus.replaceAll('_', ' ')}`);
       await refreshOrders();

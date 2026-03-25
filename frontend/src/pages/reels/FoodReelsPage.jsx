@@ -209,25 +209,25 @@ export default function FoodReelsPage() {
   };
 
   return (
-    <section className="relative min-h-svh w-full overflow-hidden bg-black text-white">
-      <header className="absolute left-0 top-0 z-40 flex w-full items-center justify-between px-3 py-3 md:px-5">
+    <section className="food-reels-page relative min-h-svh w-full overflow-hidden bg-black text-white">
+      <header className="food-reels-header absolute left-0 top-0 z-40 flex w-full items-center justify-between px-3 py-3 md:px-5">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="rounded-full bg-black/45 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur"
+          className="food-reels-back-btn rounded-full bg-black/45 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur"
         >
           Back
         </button>
 
-        <div className="rounded-full bg-black/45 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur sm:text-sm">
+        <div className="food-reels-counter rounded-full bg-black/45 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur sm:text-sm">
           {currentIndex + 1} / {reels.length} | Page {pagination.page}
         </div>
       </header>
 
       <div className="flex h-svh w-full items-center justify-center md:px-4 md:py-6">
-        <div className="h-svh w-full overflow-hidden md:h-[88svh] md:max-w-97.5 md:rounded-[28px] md:border md:border-[#1F1F1F] md:bg-[#0A0A0A] md:shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+        <div className="food-reels-frame h-svh w-full overflow-hidden md:h-[88svh] md:max-w-97.5 md:rounded-[28px] md:border md:border-[#1F1F1F] md:bg-[#0A0A0A] md:shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
           {isLoadingFeed ? (
-            <div className="flex h-full items-center justify-center text-sm text-[#A1A1AA]">Loading reels...</div>
+            <div className="food-reels-loading flex h-full items-center justify-center text-sm text-[#A1A1AA]">Loading reels...</div>
           ) : (
             <div
               ref={feedRef}
@@ -259,14 +259,14 @@ export default function FoodReelsPage() {
       </div>
 
       {activeCommentsReel && (
-        <div className="absolute inset-0 z-50 flex items-end bg-black/50 md:items-center md:justify-center">
-          <div className="w-full rounded-t-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4 md:w-105 md:rounded-2xl">
+        <div className="food-reels-comments-overlay absolute inset-0 z-50 flex items-end bg-black/50 md:items-center md:justify-center">
+          <div className="food-reels-comments-modal w-full rounded-t-2xl border border-[#1F1F1F] bg-[#0A0A0A] p-4 md:w-105 md:rounded-2xl">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Comments</h3>
+              <h3 className="food-reels-comments-title text-sm font-semibold text-white">Comments</h3>
               <button
                 type="button"
                 onClick={() => setActiveCommentsReel(null)}
-                className="rounded-md border border-[#1F1F1F] bg-black px-2 py-1 text-xs text-[#A1A1AA]"
+                className="food-reels-comments-close rounded-md border border-[#1F1F1F] bg-black px-2 py-1 text-xs text-[#A1A1AA]"
               >
                 Close
               </button>
@@ -274,12 +274,12 @@ export default function FoodReelsPage() {
 
             <div className="max-h-56 space-y-2 overflow-y-auto">
               {comments.length === 0 ? (
-                <p className="text-xs text-[#A1A1AA]">No comments yet. Start the conversation.</p>
+                <p className="food-reels-comments-empty text-xs text-[#A1A1AA]">No comments yet. Start the conversation.</p>
               ) : (
                 comments.map((comment) => (
-                  <div key={comment.id} className="rounded-lg border border-[#1F1F1F] bg-black p-2">
-                    <p className="text-xs font-semibold text-white">{comment.userName}</p>
-                    <p className="mt-1 text-xs text-[#A1A1AA]">{comment.comment}</p>
+                  <div key={comment.id} className="food-reels-comment-item rounded-lg border border-[#1F1F1F] bg-black p-2">
+                    <p className="food-reels-comment-user text-xs font-semibold text-white">{comment.userName}</p>
+                    <p className="food-reels-comment-text mt-1 text-xs text-[#A1A1AA]">{comment.comment}</p>
                   </div>
                 ))
               )}
@@ -290,13 +290,13 @@ export default function FoodReelsPage() {
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Write a comment"
-                className="h-9 w-full rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 text-sm text-white outline-none focus:border-[#3A3A3A]"
+                className="food-reels-comment-input h-9 w-full rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 text-sm text-white outline-none focus:border-[#3A3A3A]"
               />
               <button
                 type="button"
                 onClick={submitComment}
                 disabled={isPostingComment}
-                className="rounded-lg bg-[#3A3A3A] px-3 text-xs font-semibold text-white disabled:opacity-60"
+                className="food-reels-comment-post rounded-lg bg-[#3A3A3A] px-3 text-xs font-semibold text-white disabled:opacity-60"
               >
                 {isPostingComment ? '...' : 'Post'}
               </button>
@@ -307,21 +307,21 @@ export default function FoodReelsPage() {
 
       {!isLoadingFeed ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-40 flex justify-center">
-          <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-[#2A2A2A] bg-black/60 px-3 py-2 backdrop-blur">
+          <div className="food-reels-pagination-dock pointer-events-auto flex items-center gap-3 rounded-full border border-[#2A2A2A] bg-black/60 px-3 py-2 backdrop-blur">
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={!pagination.hasPrevPage}
-              className="rounded-md border border-[#2A2A2A] px-2 py-1 text-xs text-white disabled:opacity-40"
+              className="food-reels-pagination-btn rounded-md border border-[#2A2A2A] px-2 py-1 text-xs text-white disabled:opacity-40"
             >
               Prev page
             </button>
-            <span className="text-xs text-[#D4D4D8]">{pagination.page} / {pagination.totalPages}</span>
+            <span className="food-reels-pagination-text text-xs text-[#D4D4D8]">{pagination.page} / {pagination.totalPages}</span>
             <button
               type="button"
               onClick={() => setPage((prev) => prev + 1)}
               disabled={!pagination.hasNextPage}
-              className="rounded-md border border-[#2A2A2A] px-2 py-1 text-xs text-white disabled:opacity-40"
+              className="food-reels-pagination-btn rounded-md border border-[#2A2A2A] px-2 py-1 text-xs text-white disabled:opacity-40"
             >
               Next page
             </button>

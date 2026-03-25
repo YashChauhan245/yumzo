@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signup = useCallback(async (formData) => {
+    // Call API, store tokens, and update app user state.
     const { data } = await authAPI.signup(formData);
     const { user: newUser, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken', accessToken);
@@ -48,6 +49,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(async (credentials) => {
+    // Same flow as signup: API -> save tokens -> set user.
     const { data } = await authAPI.login(credentials);
     const { user: loggedInUser, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken', accessToken);
@@ -58,6 +60,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const driverLogin = useCallback(async (credentials) => {
+    // Driver login forces role to 'driver' in frontend state.
     const { data } = await authAPI.driverLogin(credentials);
     const { user: loggedInUser, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken', accessToken);
@@ -68,6 +71,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
+    // Clear local auth state and tokens.
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);

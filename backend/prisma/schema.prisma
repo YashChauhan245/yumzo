@@ -37,6 +37,7 @@ model User {
   reelComments     ReelComment[]
   groupOrders      GroupOrder[]       @relation("groupOrderOwner")
   groupMembers     GroupOrderMember[]
+  groupOrderItems  GroupOrderItem[]   @relation("groupOrderItemOwner")
   fraudEvents      FraudEvent[]
   deliveryProofs   DeliveryProof[]
   qrVerifications  QrSealVerification[]
@@ -82,6 +83,7 @@ model Restaurant {
   orders      Order[]
   cartItems   CartItem[]
   reviews     RestaurantReview[]
+  groupOrders GroupOrder[]
 
   @@map("restaurants")
 }
@@ -118,6 +120,7 @@ model Food {
   restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   cartItems     CartItem[]  @relation("FoodToCartItems")
   orderItems    OrderItem[]
+  groupOrderItems GroupOrderItem[]
 
   @@map("menu_items")
 }
@@ -240,9 +243,12 @@ model GroupOrder {
   shareCode        String             @unique
   status           GroupOrderStatus   @default(OPEN)
   createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   owner            User               @relation("groupOrderOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  restaurant       Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   members          GroupOrderMember[]
+  items            GroupOrderItem[]
 }
 
 model GroupOrderMember {
@@ -256,6 +262,22 @@ model GroupOrderMember {
   user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupOrderId, userId])
+}
+
+model GroupOrderItem {
+  id               String      @id @default(uuid())
+  groupOrderId     String
+  menuItemId       String
+  addedByUserId    String
+  quantity         Int         @default(1)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  groupOrder       GroupOrder  @relation(fields: [groupOrderId], references: [id], onDelete: Cascade)
+  menuItem         Food        @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  addedByUser      User        @relation("groupOrderItemOwner", fields: [addedByUserId], references: [id], onDelete: Cascade)
+
+  @@map("group_order_items")
 }
 
 model FraudEvent {

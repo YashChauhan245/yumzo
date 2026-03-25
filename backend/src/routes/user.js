@@ -6,17 +6,22 @@ const {
   getMenuByRestaurant,
   addOrUpdateRestaurantReview,
   getRestaurantReviews,
+  getSmartComboSuggestion,
 } = require('../controllers/restaurantController');
 const { getCart, addToCart, updateQuantity, removeItem, clearCart } = require('../controllers/cartController');
 const { placeOrder, getOrderHistory, getOrder, cancelOrder } = require('../controllers/orderController');
 const { handlePayment, getPaymentStatus } = require('../controllers/paymentController');
 const { getReels, toggleReelLike, getReelComments, addReelComment } = require('../controllers/reelController');
 const { getAddresses, addAddress, editAddress, removeAddress } = require('../controllers/addressController');
+const groupOrderRoutes = require('./groupOrder');
 
 const router = express.Router();
 
 // All user routes require JWT + customer role.
 router.use(authenticate, requireCustomer);
+
+// Customer features: group ordering room.
+router.use('/group-order', groupOrderRoutes);
 
 // Customer features: browse restaurants and menu.
 router.get('/restaurants', getAllRestaurants);
@@ -33,6 +38,19 @@ router.post(
       .withMessage('review_text must be 300 characters or fewer'),
   ],
   addOrUpdateRestaurantReview,
+);
+router.post(
+  '/restaurants/:id/smart-combo',
+  [
+    param('id').isUUID().withMessage('restaurant id must be a valid UUID'),
+    body('goal')
+      .trim()
+      .notEmpty()
+      .withMessage('goal is required')
+      .isIn(['quick_lunch', 'high_protein', 'under_200', 'quick lunch', 'high protein', 'under 200', 'under ₹200'])
+      .withMessage('goal must be one of quick_lunch, high_protein, under_200'),
+  ],
+  getSmartComboSuggestion,
 );
 
 // Customer features: addresses.

@@ -6,6 +6,7 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 const { emitOrderStatusUpdate } = require('../config/socket');
 
 const DRIVER_STATUSES = ['picked_up', 'out_for_delivery', 'delivered'];
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
 // POST /api/driver/login - login endpoint restricted to driver role.
 const loginDriver = async (req, res) => {
@@ -16,16 +17,20 @@ const loginDriver = async (req, res) => {
 
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    const user = await prismaAuthService.findByEmail(email);
+    // Step 1: Find user by email
+    const user = await prismaAuthService.findByEmail(normalizedEmail);
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
+    // Step 2: Make sure only driver accounts can use this login endpoint.
     if (user.role !== 'driver' && user.role !== 'delivery_agent') {
       return res.status(403).json({ success: false, message: 'Only driver accounts can login here' });
     }
 
+    // Step 3: Verify password.
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });

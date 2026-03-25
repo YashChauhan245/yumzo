@@ -9,15 +9,20 @@ import RecentOrders from '../components/dashboard/RecentOrders';
 import TopRestaurants from '../components/dashboard/TopRestaurants';
 import LiveDeliveryMap from '../components/dashboard/LiveDeliveryMap';
 
+const THEME_STORAGE_KEY = 'yumzo-theme';
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
-  const theme = 'dark';
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    return savedTheme === 'light' ? 'light' : 'dark';
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('yumzo-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
     window.dispatchEvent(new Event('yumzo-theme-change'));
   }, [theme]);
 
@@ -34,7 +39,7 @@ const Dashboard = () => {
         <DashboardHeader
           user={user}
           theme={theme}
-          onToggleTheme={() => {}}
+          onToggleTheme={() => setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'))}
         />
 
         <div className="dashboard-content">

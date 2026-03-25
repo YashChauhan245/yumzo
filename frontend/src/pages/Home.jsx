@@ -158,17 +158,18 @@ const Home = () => {
 
   return (
     <AppLayout>
+      <div className="home-page">
       <section className="hero-section rounded-2xl px-6 py-6 md:px-8 md:py-7">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1 text-xs font-medium text-[#A1A1AA]">
+          <div className="home-chip inline-flex items-center rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1 text-xs font-medium text-[#A1A1AA]">
             9 restaurants available nearby
           </div>
 
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white md:text-3xl">
+          <h1 className="home-hero-title mt-4 text-2xl font-semibold tracking-tight text-white md:text-3xl">
             Discover restaurants and order faster
           </h1>
 
-          <p className="mt-2 text-sm leading-relaxed text-[#A1A1AA] md:text-base">
+          <p className="home-hero-subtitle mt-2 text-sm leading-relaxed text-[#A1A1AA] md:text-base">
             Browse menus, filter by cuisine, and jump directly to checkout from a clean product-style dashboard.
           </p>
 
@@ -182,12 +183,12 @@ const Home = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search restaurants, cuisines, cities..."
-                className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#71717A] focus:border-[#3A3A3A]"
+                className="home-search-input w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] py-3 pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#71717A] focus:border-[#3A3A3A]"
               />
             </div>
             <button
               onClick={() => loadRestaurants(page)}
-              className="rounded-xl bg-[#3A3A3A] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F]"
+              className="home-refresh-btn rounded-xl bg-[#3A3A3A] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F]"
             >
               Refresh
             </button>
@@ -200,9 +201,9 @@ const Home = () => {
               { num: '4.7', label: 'Avg Rating' },
               { num: '25 min', label: 'Avg Delivery' },
             ].map(s => (
-              <div key={s.label} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-3">
-                <p className="text-lg font-semibold text-white">{s.num}</p>
-                <p className="text-xs text-[#A1A1AA]">{s.label}</p>
+              <div key={s.label} className="home-stat-card rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-3">
+                <p className="home-stat-number text-lg font-semibold text-white">{s.num}</p>
+                <p className="home-stat-label text-xs text-[#A1A1AA]">{s.label}</p>
               </div>
             ))}
           </div>
@@ -215,9 +216,9 @@ const Home = () => {
             <button
               key={cuisine}
               onClick={() => setActiveCuisine(cuisine)}
-              className={`whitespace-nowrap rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
+              className={`home-cuisine-btn whitespace-nowrap rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
                 activeCuisine === cuisine
-                  ? 'border-[#3A3A3A] bg-[#3A3A3A] text-white'
+                  ? 'active border-[#3A3A3A] bg-[#3A3A3A] text-white'
                   : 'border-[#2A2A2A] bg-[#1A1A1A] text-[#A1A1AA] hover:text-white'
               }`}
             >
@@ -230,10 +231,10 @@ const Home = () => {
       <section className="mt-6">
         <div className="mb-4">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">
+            <h2 className="home-section-title text-xl font-semibold tracking-tight text-white md:text-2xl">
               {activeCuisine === 'All' ? 'All Restaurants' : activeCuisine}
             </h2>
-            <p className="mt-1 text-sm text-[#A1A1AA]">{filteredRestaurants.length} restaurants available</p>
+            <p className="home-section-subtitle mt-1 text-sm text-[#A1A1AA]">{filteredRestaurants.length} restaurants available</p>
           </div>
         </div>
 
@@ -254,7 +255,7 @@ const Home = () => {
               {filteredRestaurants.map((restaurant) => (
               <article
                 key={restaurant.id}
-                className="restaurant-card group surface-card overflow-hidden rounded-2xl transition-colors"
+                className="home-restaurant-card restaurant-card group surface-card overflow-hidden rounded-2xl transition-colors"
               >
                 <div className="relative overflow-hidden">
                   {restaurant.image_url ? (
@@ -266,22 +267,22 @@ const Home = () => {
                       onError={(event) => withFallbackImage(event, '/images/dishes/indian.png')}
                     />
                   ) : (
-                    <div className="flex h-44 items-center justify-center bg-[#0B0B0B] text-4xl">🍽️</div>
+                    <div className="home-no-image flex h-44 items-center justify-center bg-[#0B0B0B] text-4xl">🍽️</div>
                   )}
 
                   <div className="absolute top-3 left-3 flex gap-2">
-                    <span className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
+                    <span className="home-card-pill rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
                       {restaurant.delivery_time || '25-35 min'}
                     </span>
                   </div>
                   <div className="absolute top-3 right-3">
-                    <span className="flex items-center gap-1 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
+                    <span className="home-card-pill flex items-center gap-1 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-white">
                       ★ {getDisplayRating(restaurant.rating, restaurant.name)}
                     </span>
                   </div>
 
                   <div className="absolute bottom-3 left-3">
-                    <span className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-[#A1A1AA]">
+                    <span className="home-card-pill home-cuisine-pill rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-2 py-1 text-[11px] font-medium text-[#A1A1AA]">
                       {restaurant.cuisine_type || 'Multi-cuisine'}
                     </span>
                   </div>
@@ -290,28 +291,28 @@ const Home = () => {
                 <div className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-base font-semibold text-white">{restaurant.name}</h3>
+                      <h3 className="home-restaurant-name text-base font-semibold text-white">{restaurant.name}</h3>
                       <div className="mt-1 flex items-center gap-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                         </svg>
-                        <span className="text-xs text-[#A1A1AA]">{restaurant.city}</span>
-                        <span className="text-[#71717A]">•</span>
-                        <span className="text-xs text-[#A1A1AA]">{restaurant.price_range || '₹₹'}</span>
+                        <span className="home-meta-text text-xs text-[#A1A1AA]">{restaurant.city}</span>
+                        <span className="home-meta-dot text-[#71717A]">•</span>
+                        <span className="home-meta-text text-xs text-[#A1A1AA]">{restaurant.price_range || '₹₹'}</span>
                       </div>
                     </div>
                   </div>
 
-                  <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[#A1A1AA]">{restaurant.description || 'Fresh and tasty meals delivered fast.'}</p>
+                  <p className="home-restaurant-desc mt-3 line-clamp-2 text-sm leading-relaxed text-[#A1A1AA]">{restaurant.description || 'Fresh and tasty meals delivered fast.'}</p>
 
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                      <span className="text-xs text-[#A1A1AA]">Open now</span>
+                      <span className="home-open-text text-xs text-[#A1A1AA]">Open now</span>
                     </div>
                     <Link
                       to={`/restaurants/${restaurant.id}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-xs font-medium text-white transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]"
+                      className="home-view-menu-btn inline-flex items-center gap-1.5 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-xs font-medium text-white transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]"
                     >
                       View Menu
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
@@ -338,10 +339,10 @@ const Home = () => {
       <section className="mb-4 mt-10">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">Food Reels</h2>
-            <p className="mt-1 text-sm text-[#A1A1AA]">Trending cooking videos from chefs</p>
+            <h2 className="home-reels-title text-xl font-semibold tracking-tight text-white md:text-2xl">Food Reels</h2>
+            <p className="home-reels-subtitle mt-1 text-sm text-[#A1A1AA]">Trending cooking videos from chefs</p>
           </div>
-          <Link to="/reels" className="text-sm font-medium text-[#D4D4D8] transition-colors hover:text-white">
+          <Link to="/reels" className="home-reels-link text-sm font-medium text-[#D4D4D8] transition-colors hover:text-white">
             View All →
           </Link>
         </div>
@@ -355,7 +356,7 @@ const Home = () => {
             { img: '/images/reels/reel5.png', title: 'Sushi Roll 🍣', views: '21K' },
             { img: '/images/reels/reel6.png', title: 'Cheese Pull 🧀', views: '34K' },
           ].map((reel, i) => (
-            <Link key={i} to="/reels" className="group relative aspect-9/14 overflow-hidden rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A]">
+            <Link key={i} to="/reels" className="home-reel-card group relative aspect-9/14 overflow-hidden rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A]">
               <img
                 src={reel.img}
                 alt={reel.title}
@@ -364,16 +365,17 @@ const Home = () => {
                 onError={(event) => withFallbackImage(event, '/images/restaurants/collage.png')}
               />
               <div className="absolute bottom-0 left-0 right-0 p-3">
-                <p className="text-xs font-medium text-white">{reel.title}</p>
+                <p className="home-reel-title text-xs font-medium text-white">{reel.title}</p>
                 <div className="mt-1 flex items-center gap-1">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                  <span className="text-[10px] text-[#A1A1AA]">{reel.views} views</span>
+                  <span className="home-reel-views text-[10px] text-[#A1A1AA]">{reel.views} views</span>
                 </div>
               </div>
             </Link>
           ))}
         </div>
       </section>
+      </div>
     </AppLayout>
   );
 };

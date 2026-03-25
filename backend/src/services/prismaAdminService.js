@@ -63,34 +63,22 @@ const getDashboardStats = async () => {
 };
 
 const listRestaurants = async ({ skip = 0, limit = 10 } = {}) => {
-  const [restaurants, totalRows] = await Promise.all([
-    prisma.$queryRaw`
-    SELECT
-      id,
-      owner_id,
-      name,
-      description,
-      cuisine_type,
-      address,
-      city,
-      phone,
-      image_url,
-      rating,
-      is_active,
-      created_at,
-      updated_at
-    FROM restaurants
-    WHERE owner_id IS NOT NULL
-    ORDER BY created_at DESC
-    OFFSET ${skip}
-    LIMIT ${limit}
-  `,
-    prisma.$queryRaw`SELECT COUNT(*)::int AS count FROM restaurants WHERE owner_id IS NOT NULL`,
+  // Keep implementation simple with Prisma findMany + count.
+  const [restaurants, total] = await Promise.all([
+    prisma.restaurant.findMany({
+      where: { ownerId: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.restaurant.count({
+      where: { ownerId: { not: null } },
+    }),
   ]);
 
   return {
-    rows: restaurants,
-    total: totalRows?.[0]?.count || 0,
+    rows: restaurants.map(formatRestaurant),
+    total,
   };
 };
 

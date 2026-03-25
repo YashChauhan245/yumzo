@@ -31,6 +31,13 @@ const progressByStatus = {
   delivered: 100,
 };
 
+const getStatusActionLabel = (nextStatus) => {
+  if (nextStatus === 'picked_up') return 'Mark Picked Up';
+  if (nextStatus === 'out_for_delivery') return 'Mark Out for Delivery';
+  if (nextStatus === 'delivered') return 'Mark Delivered';
+  return null;
+};
+
 const rejectionReasons = [
   'Vehicle issue',
   'High traffic in route',
@@ -98,6 +105,7 @@ export default function AssignedOrders() {
   const rejectAssignedOrder = async () => {
     if (!rejectOrderTarget) return;
 
+    // Build reason text from preset or custom input.
     const reason = selectedReason === 'Other' ? customReason.trim() : selectedReason;
     setRejectingOrderId(rejectOrderTarget.id);
     try {
@@ -154,14 +162,7 @@ export default function AssignedOrders() {
           <div className="space-y-3">
             {orders.map((order) => {
               const nextStatus = nextStatusMap[order.status];
-              const cta =
-                nextStatus === 'picked_up'
-                  ? 'Mark Picked Up'
-                  : nextStatus === 'out_for_delivery'
-                  ? 'Mark Out for Delivery'
-                  : nextStatus === 'delivered'
-                    ? 'Mark Delivered'
-                    : null;
+              const cta = getStatusActionLabel(nextStatus);
 
               return (
                 <article key={order.id} className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4">

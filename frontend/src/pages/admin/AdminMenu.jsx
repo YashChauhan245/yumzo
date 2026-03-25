@@ -14,6 +14,8 @@ const emptyForm = {
   is_veg: false,
 };
 
+const emptyEditForm = { name: '', price: '', category: '', is_veg: false };
+
 export default function AdminMenu() {
   const [menuItems, setMenuItems] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
@@ -22,7 +24,7 @@ export default function AdminMenu() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', price: '', category: '', is_veg: false });
+  const [editForm, setEditForm] = useState(emptyEditForm);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -35,14 +37,15 @@ export default function AdminMenu() {
   const loadData = useCallback(async (selectedRestaurantId = restaurantIdFilter, requestedPage = page) => {
     setLoading(true);
     try {
-      const [restaurantsRes, menuRes] = await Promise.all([
-        adminAPI.getRestaurants({ page: 1, limit: 30 }),
-        adminAPI.getMenuItems(
-          selectedRestaurantId
-            ? { restaurantId: selectedRestaurantId, page: requestedPage, limit: 8 }
-            : { page: requestedPage, limit: 8 },
-        ),
-      ]);
+      // Step 1: load restaurant list for dropdown options.
+      const restaurantsRes = await adminAPI.getRestaurants({ page: 1, limit: 30 });
+
+      // Step 2: load menu list with optional restaurant filter.
+      const menuRes = await adminAPI.getMenuItems(
+        selectedRestaurantId
+          ? { restaurantId: selectedRestaurantId, page: requestedPage, limit: 8 }
+          : { page: requestedPage, limit: 8 },
+      );
 
       setRestaurants(restaurantsRes?.data?.data?.restaurants || []);
       setMenuItems(menuRes?.data?.data?.menuItems || []);
@@ -113,7 +116,7 @@ export default function AdminMenu() {
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setEditingItem(null);
-    setEditForm({ name: '', price: '', category: '', is_veg: false });
+    setEditForm(emptyEditForm);
   };
 
   const handleEditSave = async () => {
@@ -215,10 +218,9 @@ export default function AdminMenu() {
           <select
             value={restaurantIdFilter}
             onChange={(e) => {
-              const nextValue = e.target.value;
-              setRestaurantIdFilter(nextValue);
+              // Reset pagination when filter changes; useEffect will fetch once.
+              setRestaurantIdFilter(e.target.value);
               setPage(1);
-              loadData(nextValue, 1);
             }}
             className={formFieldBaseClass}
           >

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const APP_LOGO_SRC = '/images/yumzo-logo.svg';
 
 const Signup = () => {
   const { signup } = useAuth();
@@ -97,7 +98,7 @@ const Signup = () => {
     <div className="flex min-h-screen items-center justify-center bg-[#0B0B0B] p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 text-left">
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Yumzo</h1>
+          <img src={APP_LOGO_SRC} alt="Yumzo" className="h-10 w-auto" loading="eager" />
           <p className="mt-2 text-sm text-[#A1A1AA]">Create your account.</p>
         </div>
 

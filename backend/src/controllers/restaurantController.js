@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const prismaRestaurantService = require('../services/prismaRestaurantService');
+const smartComboService = require('../services/smartComboService');
 const { getPagination, buildPaginationMeta } = require('../utils/pagination');
 
 const restaurantService = {
@@ -184,10 +185,56 @@ const addRestaurant = async (req, res) => {
   }
 };
 
+// POST /api/user/restaurants/:id/smart-combo - suggest goal-based combo using AI + fallback scoring
+const getSmartComboSuggestion = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ success: false, errors: errors.array() });
+  }
+
+  try {
+    const { id } = req.params;
+    if (!isUuid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid restaurant id format' });
+    }
+
+    const restaurant = await restaurantService.findById(id);
+    if (!restaurant) {
+      return res.status(404).json({ success: false, message: 'Restaurant not found' });
+    }
+
+    const menuItems = await menuService.findByRestaurant(id, {});
+    const combo = await smartComboService.suggestSmartCombo({
+      restaurantName: restaurant.name,
+      menuItems,
+      goal: req.body.goal,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        restaurant: {
+          id: restaurant.id,
+          name: restaurant.name,
+        },
+        combo,
+      },
+    });
+  } catch (err) {
+    if (err?.message?.includes('Unsupported goal')) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    console.error('getSmartComboSuggestion error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getAllRestaurants,
   getMenuByRestaurant,
   addRestaurant,
   addOrUpdateRestaurantReview,
   getRestaurantReviews,
+  getSmartComboSuggestion,
 };

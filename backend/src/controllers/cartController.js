@@ -7,9 +7,10 @@ const menuService = { findById: prismaCartService.findMenuItemById };
 // GET /api/user/cart - return the logged in customer's cart
 const getCart = async (req, res) => {
   try {
+    // Step 1: Load all cart rows for logged-in user.
     const items = await cartService.getByUser(req.user.id);
 
-    // Calculate total price
+    // Step 2: Calculate total price with a simple loop operation.
     const totalAmount = items.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
 
     return res.status(200).json({
@@ -36,7 +37,7 @@ const addToCart = async (req, res) => {
   try {
     const { menu_item_id, quantity = 1 } = req.body;
 
-    // Check the menu item exists and is available
+    // Step 1: Check menu item exists and is available.
     const menuItem = await menuService.findById(menu_item_id);
     if (!menuItem) {
       return res.status(404).json({ success: false, message: 'Menu item not found' });
@@ -45,6 +46,7 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Menu item is currently unavailable' });
     }
 
+    // Step 2: Add or increase quantity in cart.
     const cartItem = await cartService.upsertItem({
       userId: req.user.id,
       menuItemId: menu_item_id,
@@ -73,6 +75,8 @@ const updateQuantity = async (req, res) => {
   try {
     const { itemId } = req.params;
     const { quantity } = req.body;
+
+    // Update quantity for only this user's item.
     const updated = await cartService.updateQuantity(itemId, req.user.id, quantity);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'Cart item not found' });
@@ -109,6 +113,7 @@ const removeItem = async (req, res) => {
 // DELETE /api/user/cart - clear the entire cart
 const clearCart = async (req, res) => {
   try {
+    // Delete every cart row for current user.
     await cartService.clearCart(req.user.id);
     return res.status(200).json({ success: true, message: 'Cart cleared' });
   } catch (err) {

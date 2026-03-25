@@ -16,6 +16,7 @@ const placeOrder = async (req, res) => {
     const { delivery_address, address_id, notes } = req.body;
     const userId = req.user.id;
 
+    // Step 1: Resolve final delivery address.
     let resolvedAddress = String(delivery_address || '').trim();
     if (address_id) {
       const selectedAddress = await prismaAddressService.findByIdForUser({
@@ -34,13 +35,13 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Delivery address is required' });
     }
 
-    // Load the user's cart
+    // Step 2: Load cart items.
     const cartItems = await prismaCartService.getByUser(userId);
     if (cartItems.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart is empty. Add items before placing an order.' });
     }
 
-    // All items must be from the same restaurant
+    // Step 3: All cart items must belong to one restaurant.
     const restaurantIds = [...new Set(cartItems.map((i) => i.restaurant_id))];
     if (restaurantIds.length > 1) {
       return res.status(400).json({
@@ -51,7 +52,7 @@ const placeOrder = async (req, res) => {
 
     const restaurantId = restaurantIds[0];
 
-    // Check that each item is still available
+    // Step 4: Validate each menu item is still available.
     for (const ci of cartItems) {
       const menuItem = await prismaCartService.findMenuItemById(ci.menu_item_id);
       if (!menuItem || !menuItem.is_available) {
@@ -62,7 +63,7 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // Build the order line items
+    // Step 5: Build order item payload.
     const items = cartItems.map((ci) => ({
       menuItemId: ci.menu_item_id,
       name: ci.item_name,
@@ -70,6 +71,7 @@ const placeOrder = async (req, res) => {
       quantity: ci.quantity,
     }));
 
+    // Step 6: Create order and notify via socket.
     const order = await prismaOrderService.createOrder({
       userId,
       restaurantId,
@@ -86,7 +88,7 @@ const placeOrder = async (req, res) => {
       created_at: order.created_at,
     });
 
-    // Clear the cart after ordering
+    // Step 7: Clear cart after successful order creation.
     await prismaCartService.clearCart(userId);
 
     return res.status(201).json({

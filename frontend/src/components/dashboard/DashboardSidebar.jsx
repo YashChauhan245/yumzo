@@ -73,25 +73,13 @@ const navItems = [
 ];
 
 const DashboardSidebar = ({ collapsed, onToggle, activeNav, onNavChange }) => {
+  const brandLogoSrc = collapsed ? '/images/yumzo-mark.svg' : '/images/yumzo-logo.svg';
+
   return (
     <aside className={`dash-sidebar ${collapsed ? 'collapsed' : ''}`}>
       {/* Logo */}
       <Link to="/" className="sidebar-logo">
-        <div className="logo-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="url(#logoGrad)" />
-            <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-            <circle cx="9" cy="10" r="1.2" fill="#fff" />
-            <circle cx="15" cy="10" r="1.2" fill="#fff" />
-            <defs>
-              <linearGradient id="logoGrad" x1="2" y1="2" x2="22" y2="22">
-                <stop stopColor="#3A3A3A" />
-                <stop offset="1" stopColor="#4A4A4A" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        {!collapsed && <span className="logo-text">Yumzo</span>}
+        <img src={brandLogoSrc} alt="Yumzo" className="sidebar-brand-logo" loading="eager" />
       </Link>
 
       {/* Toggle */}

@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { driverAPI, getApiErrorMessage } from '../../services/api';
 
+const getOrderPayout = (order) => Number(order.total_price ?? order.total_amount ?? 0);
+
+const getAveragePayout = (orders) => {
+  if (!orders.length) return 0;
+  const total = orders.reduce((sum, order) => sum + getOrderPayout(order), 0);
+  return Math.round(total / orders.length);
+};
+
 export default function AvailableOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +39,7 @@ export default function AvailableOrders() {
   useEffect(() => {
     loadOrders();
 
+    // Poll every 10s so drivers see new requests quickly.
     const poll = setInterval(() => {
       loadOrders(true);
     }, 10000);
@@ -73,7 +82,7 @@ export default function AvailableOrders() {
             <div>
               <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">Avg Payout</p>
               <p className="mt-2 text-3xl font-semibold text-white">
-                Rs {orders.length ? Math.round(orders.reduce((sum, order) => sum + Number(order.total_price ?? order.total_amount ?? 0), 0) / orders.length) : 0}
+                Rs {getAveragePayout(orders)}
               </p>
             </div>
             <div>
@@ -106,7 +115,7 @@ export default function AvailableOrders() {
                 <div className="mt-3 grid gap-2 text-sm text-[#C4C4CC] md:grid-cols-2">
                   <p><span className="text-[#8E8E96]">Restaurant:</span> {order.restaurant_name || 'Unknown'}</p>
                   <p><span className="text-[#8E8E96]">Customer:</span> {order.customer_name || 'N/A'}</p>
-                  <p><span className="text-[#8E8E96]">Payout:</span> Rs {Number(order.total_price ?? order.total_amount ?? 0).toFixed(2)}</p>
+                  <p><span className="text-[#8E8E96]">Payout:</span> Rs {getOrderPayout(order).toFixed(2)}</p>
                   <p><span className="text-[#8E8E96]">Distance:</span> 2.4 km (est.)</p>
                 </div>
 

@@ -50,6 +50,7 @@ export const restaurantsAPI = {
   getMenu: (restaurantId, params = {}) => api.get(`/user/restaurants/${restaurantId}/menu`, { params }),
   getReviews: (restaurantId, params = {}) => api.get(`/user/restaurants/${restaurantId}/reviews`, { params }),
   addReview: (restaurantId, payload) => api.post(`/user/restaurants/${restaurantId}/reviews`, payload),
+  getSmartCombo: (restaurantId, payload) => api.post(`/user/restaurants/${restaurantId}/smart-combo`, payload),
 };
 
 export const addressesAPI = {
@@ -72,6 +73,16 @@ export const ordersAPI = {
   getOrders: (params = {}) => api.get('/user/orders', { params }),
   getOrder: (orderId) => api.get(`/user/orders/${orderId}`),
   cancelOrder: (orderId, payload = {}) => api.patch(`/user/orders/${orderId}/cancel`, payload),
+};
+
+export const groupOrderAPI = {
+  createRoom: (payload) => api.post('/user/group-order/rooms', payload),
+  joinRoom: (roomCode) => api.post(`/user/group-order/rooms/${roomCode}/join`),
+  getRoom: (roomCode) => api.get(`/user/group-order/rooms/${roomCode}`),
+  addItem: (roomCode, payload) => api.post(`/user/group-order/rooms/${roomCode}/items`, payload),
+  updateItem: (roomCode, itemId, payload) => api.patch(`/user/group-order/rooms/${roomCode}/items/${itemId}`, payload),
+  removeItem: (roomCode, itemId) => api.delete(`/user/group-order/rooms/${roomCode}/items/${itemId}`),
+  checkoutRoom: (roomCode) => api.post(`/user/group-order/rooms/${roomCode}/checkout`),
 };
 
 export const paymentsAPI = {

@@ -11,6 +11,7 @@ import Orders from './pages/Orders';
 import Dashboard from './pages/Dashboard';
 import DashboardPreview from './pages/DashboardPreview';
 import FoodReels from './pages/FoodReels';
+import GroupOrder from './pages/GroupOrder';
 import DriverLogin from './pages/driver/DriverLogin';
 import DriverDashboard from './pages/driver/DriverDashboard';
 import AvailableOrders from './pages/driver/AvailableOrders';
@@ -89,6 +90,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['customer']}>
                 <FoodReels />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/group-order"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <GroupOrder />
               </ProtectedRoute>
             }
           />
