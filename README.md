@@ -306,24 +306,4 @@ Current note:
 - GET /api/admin/orders
 - PATCH /api/admin/orders/:orderId/status
 
-## Interview Prep
 
-For quick viva/interview revision, see INTERVIEW_PREP.md in the project root.
-
-## 60-Second Interview Pitch
-
-Yumzo is a full-stack food delivery platform built with React, Node.js, Express, Prisma, and PostgreSQL.
-It supports Customer, Driver, and Admin roles with JWT-based authentication and role-based route protection.
-
-On the customer side, users can browse restaurants, manage cart, place orders, make mock payments,
-track order progress, cancel eligible orders, save delivery addresses, and submit restaurant ratings/reviews.
-
-On the driver side, delivery partners can accept available orders, update delivery states,
-and reject assignments with reasons when needed.
-
-On the admin side, platform operations include restaurant/menu management,
-early-stage order lifecycle control, and dashboard monitoring.
-
-I also implemented practical product-quality improvements like pagination,
-address management, average rating updates, reusable UI patterns,
-and cleaner role-based order handling.
