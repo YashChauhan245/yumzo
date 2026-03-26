@@ -16,8 +16,11 @@ It includes three major roles:
 - Restaurant listing and restaurant menu pages.
 - Cart flow: add, update, remove, clear.
 - Place order and see order history.
+- Checkout supports both manual address entry and one-click GPS capture.
+- Checkout shows a live map preview for selected/manual/GPS address.
 - Payment endpoint integration (mock gateway).
 - Order status notifications (polling-based).
+- Order tracking view with delivery timeline and map fallback.
 - Group ordering room flow:
   - Create room and share room code
   - Join room and add items collaboratively
@@ -32,6 +35,9 @@ It includes three major roles:
 - Available orders queue.
 - Accept order.
 - Reject assigned order with reason.
+- Driver can update live location for assigned deliveries.
+- Driver order cards show customer location map from delivery address.
+- One-click "Open in Maps App" navigation with mobile deep-link + web fallback.
 - Assigned orders lifecycle updates:
   - preparing -> picked_up -> out_for_delivery -> delivered
 - Rejection puts the order back to queue for other drivers.
@@ -93,6 +99,15 @@ It includes three major roles:
 - Cleanup:
   - Removed old backend test files for a simpler beginner-level setup
   - Removed empty unused frontend folder
+- Tracking and map UX enhancements:
+  - Customer tracking card now renders fallback address map before live GPS starts
+  - Driver screens include customer location map and direct navigation action
+  - Checkout can capture and use current GPS coordinates while keeping manual address option
+- Performance improvements:
+  - Route-level lazy loading added for major pages
+  - Reduced redundant admin menu data fetches
+  - Menu and review caching added on restaurant page
+  - Map animation throttled/paused when hidden or offscreen
 
 ## Architecture Notes
 
@@ -115,6 +130,7 @@ It includes three major roles:
 - Axios
 - Tailwind CSS v4
 - react-hot-toast
+- socket.io-client
 
 ### Backend
 
@@ -189,7 +205,13 @@ Create frontend/.env:
 
 ```env
 VITE_API_URL=/api
+VITE_SOCKET_URL=http://localhost:5000
 ```
+
+Note:
+
+- VITE_SOCKET_URL is optional in local setup.
+- If omitted, app auto-resolves socket URL from API base / current origin.
 
 ### 4) Prisma and database setup
 
@@ -269,6 +291,7 @@ Current note:
 - POST /api/user/orders
 - GET /api/user/orders
 - GET /api/user/orders/:id
+- GET /api/user/orders/:id/tracking
 - PATCH /api/user/orders/:id/cancel
 - POST /api/user/group-orders/rooms
 - POST /api/user/group-orders/rooms/join
@@ -291,6 +314,7 @@ Current note:
 - POST /api/driver/orders/:orderId/reject
 - GET /api/driver/orders/assigned
 - PATCH /api/driver/orders/:orderId/status
+- PATCH /api/driver/orders/:orderId/location
 
 ### Admin
 
