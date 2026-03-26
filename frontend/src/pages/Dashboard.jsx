@@ -11,6 +11,26 @@ import LiveDeliveryMap from '../components/dashboard/LiveDeliveryMap';
 
 const THEME_STORAGE_KEY = 'yumzo-theme';
 
+const renderDefaultDashboardSection = () => {
+  return (
+    <>
+      <StatsCards />
+
+      <div className="charts-row">
+        <RevenueChart />
+        <OrdersDonut />
+      </div>
+
+      <RecentOrders />
+
+      <div className="bottom-row">
+        <TopRestaurants />
+        <LiveDeliveryMap />
+      </div>
+    </>
+  );
+};
+
 const Dashboard = () => {
   const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -25,6 +45,53 @@ const Dashboard = () => {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
     window.dispatchEvent(new Event('yumzo-theme-change'));
   }, [theme]);
+
+  const renderDashboardSection = () => {
+    if (activeNav === 'orders') {
+      return <RecentOrders />;
+    }
+
+    if (activeNav === 'restaurants') {
+      return (
+        <div className="bottom-row">
+          <TopRestaurants />
+          <LiveDeliveryMap />
+        </div>
+      );
+    }
+
+    if (activeNav === 'analytics') {
+      return (
+        <div className="charts-row">
+          <RevenueChart />
+          <OrdersDonut />
+        </div>
+      );
+    }
+
+    if (activeNav === 'customers') {
+      return <StatsCards />;
+    }
+
+    if (activeNav === 'settings') {
+      return (
+        <section className="orders-card">
+          <div className="orders-header">
+            <div>
+              <h3 className="chart-title">Settings</h3>
+              <p className="chart-subtitle">Basic dashboard preferences</p>
+            </div>
+          </div>
+          <div className="space-y-3 p-1 text-sm text-[#A1A1AA]">
+            <p>Current theme: <span className="font-semibold text-white">{theme}</span></p>
+            <p>Use the top-right theme button to switch dashboard appearance.</p>
+          </div>
+        </section>
+      );
+    }
+
+    return renderDefaultDashboardSection();
+  };
 
   return (
     <div className={`dashboard-shell ${theme}`}>
@@ -43,23 +110,7 @@ const Dashboard = () => {
         />
 
         <div className="dashboard-content">
-          {/* Stats Cards */}
-          <StatsCards />
-
-          {/* Charts Row */}
-          <div className="charts-row">
-            <RevenueChart />
-            <OrdersDonut />
-          </div>
-
-          {/* Recent Orders */}
-          <RecentOrders />
-
-          {/* Bottom Row */}
-          <div className="bottom-row">
-            <TopRestaurants />
-            <LiveDeliveryMap />
-          </div>
+          {renderDashboardSection()}
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { io } from 'socket.io-client';
 import AppLayout from '../components/layout/AppLayout';
 import EmptyState from '../components/ui/EmptyState';
 import PaginationControls from '../components/ui/PaginationControls';
@@ -15,21 +16,46 @@ const paymentMethods = [
 
 const orderTimeline = ['pending', 'confirmed', 'preparing', 'picked_up', 'out_for_delivery', 'delivered'];
 const deliveryTimeline = ['preparing', 'picked_up', 'out_for_delivery', 'delivered'];
+const orderStatusClass = 'bg-[#2A2A2A] text-[#A1A1AA]';
 
-const getDriverLocation = (orderId) => {
-  const seed = orderId
-    .split('')
-    .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+const resolveSocketUrl = () => {
+  const explicitUrl = import.meta.env.VITE_SOCKET_URL;
+  if (explicitUrl) return explicitUrl;
 
-  const lat = 28.6139 + ((seed % 10) - 5) * 0.003;
-  const lng = 77.209 + ((seed % 8) - 4) * 0.003;
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl && /^https?:\/\//i.test(apiUrl)) {
+    return new URL(apiUrl).origin;
+  }
 
-  return { lat: lat.toFixed(5), lng: lng.toFixed(5) };
+  if (import.meta.env.DEV) return 'http://localhost:5000';
+  return window.location.origin;
 };
 
 const getCurrentTimelineStep = (status) => {
   const step = orderTimeline.indexOf(status);
   return step < 0 ? 0 : step;
+};
+
+const notifySilentOrderChanges = (previousMap, nextOrders) => {
+  // Polling runs quietly in background; this helper shows only meaningful changes.
+  for (const order of nextOrders) {
+    const prev = previousMap.get(order.id);
+    if (!prev) continue;
+
+    if (prev.status !== order.status) {
+      toast.success(`Order ${order.id.slice(0, 8)} status updated: ${order.status.replaceAll('_', ' ')}`);
+    }
+
+    const hasNewRejectionNote =
+      order.status === 'confirmed'
+      && order.notes
+      && order.notes.includes('[Driver Rejection]')
+      && prev.notes !== order.notes;
+
+    if (hasNewRejectionNote) {
+      toast.error('Driver rejected your order. Reassigning to another nearby driver.');
+    }
+  }
 };
 
 const Orders = () => {
@@ -42,6 +68,7 @@ const Orders = () => {
   const [cancellingOrderId, setCancellingOrderId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [trackingOrderId, setTrackingOrderId] = useState('');
+  const [liveLocations, setLiveLocations] = useState({});
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -50,6 +77,7 @@ const Orders = () => {
     hasNextPage: false,
   });
   const previousOrdersRef = useRef(new Map());
+  const socketRef = useRef(null);
 
   const loadOrders = useCallback(async (silent = false, requestedPage = page) => {
     if (!silent) {
@@ -69,26 +97,7 @@ const Orders = () => {
         },
       );
 
-      if (silent) {
-        for (const order of nextOrders) {
-          const prev = previousOrdersRef.current.get(order.id);
-          if (!prev) continue;
-
-          if (prev.status !== order.status) {
-            toast.success(`Order ${order.id.slice(0, 8)} status updated: ${order.status.replaceAll('_', ' ')}`);
-          }
-
-          const hasNewRejectionNote =
-            order.status === 'confirmed'
-            && order.notes
-            && order.notes.includes('[Driver Rejection]')
-            && prev.notes !== order.notes;
-
-          if (hasNewRejectionNote) {
-            toast.error('Driver rejected your order. Reassigning to another nearby driver.');
-          }
-        }
-      }
+      if (silent) notifySilentOrderChanges(previousOrdersRef.current, nextOrders);
 
       previousOrdersRef.current = new Map(nextOrders.map((order) => [order.id, order]));
       setOrders(nextOrders);
@@ -106,11 +115,72 @@ const Orders = () => {
     loadOrders(false, page);
 
     const interval = setInterval(() => {
+      if (document.hidden) return;
       loadOrders(true, page);
-    }, 10000);
+    }, 20000);
 
     return () => clearInterval(interval);
   }, [page, loadOrders]);
+
+  useEffect(() => {
+    // One socket connection for this screen; subscribe per selected order below.
+    const socket = io(resolveSocketUrl(), {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    });
+
+    socketRef.current = socket;
+
+    const handleLocation = (payload) => {
+      if (!payload?.order_id) return;
+
+      if (payload.ended) {
+        setLiveLocations((prev) => {
+          const next = { ...prev };
+          delete next[payload.order_id];
+          return next;
+        });
+        return;
+      }
+
+      setLiveLocations((prev) => ({
+        ...prev,
+        [payload.order_id]: payload,
+      }));
+    };
+
+    socket.on('order:location', handleLocation);
+
+    return () => {
+      socket.off('order:location', handleLocation);
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!trackingOrderId) return;
+
+    // Join only the active order room so customer gets scoped location updates.
+    socketRef.current?.emit('order:subscribe', trackingOrderId);
+
+    const fetchLatestTracking = async () => {
+      try {
+        const { data } = await ordersAPI.getTracking(trackingOrderId);
+        const tracking = data?.data?.tracking;
+        if (!tracking) return;
+
+        setLiveLocations((prev) => ({
+          ...prev,
+          [trackingOrderId]: tracking,
+        }));
+      } catch (error) {
+        const message = getApiErrorMessage(error, 'Failed to load tracking details.');
+        toast.error(message);
+      }
+    };
+
+    fetchLatestTracking();
+  }, [trackingOrderId]);
 
   const pendingCount = useMemo(() => orders.filter((o) => o.status === 'pending').length, [orders]);
 
@@ -143,13 +213,6 @@ const Orders = () => {
     }
   };
 
-  const statusClass = (status) => {
-    if (status === 'pending') return 'bg-[#2A2A2A] text-[#A1A1AA]';
-    if (status === 'confirmed') return 'bg-[#2A2A2A] text-[#A1A1AA]';
-    if (status === 'cancelled') return 'bg-[#2A2A2A] text-[#A1A1AA]';
-    return 'bg-[#2A2A2A] text-[#A1A1AA]';
-  };
-
   const toggleTracking = (orderId) => {
     setTrackingOrderId((prev) => (prev === orderId ? '' : orderId));
   };
@@ -160,13 +223,37 @@ const Orders = () => {
   };
 
   const renderTrackingCard = (order) => {
-    const location = getDriverLocation(order.id);
+    const location = liveLocations[order.id] || null;
     const currentStep = getDeliveryTimelineStep(order.status);
+    const hasLocation = Number.isFinite(Number(location?.latitude)) && Number.isFinite(Number(location?.longitude));
+    const updatedAtMs = location?.updated_at ? new Date(location.updated_at).getTime() : 0;
+    const isLiveFresh = Boolean(updatedAtMs) && Date.now() - updatedAtMs < 20000;
+    const mapBorderClass = hasLocation
+      ? (isLiveFresh ? 'border-emerald-500/50' : 'border-amber-500/45')
+      : 'border-[#2A2A2A]';
+    const fallbackAddressQuery = encodeURIComponent(order.delivery_address || order.restaurant_name || 'India');
+    const fallbackMapSrc = `https://www.google.com/maps?q=${fallbackAddressQuery}&z=14&output=embed`;
 
     return (
       <div className="mt-4 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
-        <p className="text-sm font-semibold text-white">Delivery timeline</p>
-        <p className="mt-1 text-xs text-[#A1A1AA]">Assigned driver: Rahul Verma</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-white">Delivery timeline</p>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold ${
+              hasLocation && isLiveFresh
+                ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                : 'border-[#2A2A2A] bg-[#161616] text-[#A1A1AA]'
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                hasLocation && isLiveFresh ? 'animate-pulse bg-emerald-300' : 'bg-[#6B7280]'
+              }`}
+            />
+            {hasLocation && isLiveFresh ? 'Live' : 'Updating...'}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-[#A1A1AA]">Assigned driver: {order.driver_name || 'Not assigned yet'}</p>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-5">
           {deliveryTimeline.map((step, idx) => (
@@ -181,14 +268,35 @@ const Orders = () => {
           ))}
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-lg border border-[#2A2A2A]">
-          <iframe
-            title={`order-map-${order.id}`}
-            src={`https://www.google.com/maps?q=${location.lat},${location.lng}&z=13&output=embed`}
-            className="h-56 w-full"
-            loading="lazy"
-          />
-        </div>
+        {hasLocation ? (
+          <>
+            <div className={`mt-3 overflow-hidden rounded-lg border ${mapBorderClass}`}>
+              <iframe
+                title={`order-map-${order.id}`}
+                src={`https://www.google.com/maps?q=${location.latitude},${location.longitude}&z=14&output=embed`}
+                className="h-56 w-full"
+                loading="lazy"
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#A1A1AA]">
+              Live location updated at {new Date(location.updated_at).toLocaleTimeString()} ({Number(location.latitude).toFixed(5)}, {Number(location.longitude).toFixed(5)})
+            </p>
+          </>
+        ) : (
+          <>
+            <div className={`mt-3 overflow-hidden rounded-lg border ${mapBorderClass}`}>
+              <iframe
+                title={`order-map-fallback-${order.id}`}
+                src={fallbackMapSrc}
+                className="h-56 w-full"
+                loading="lazy"
+              />
+            </div>
+            <div className="mt-2 rounded-lg border border-dashed border-[#2A2A2A] bg-[#111111] px-3 py-3 text-xs text-[#A1A1AA]">
+              Driver live GPS is not available yet. Showing your delivery address on map.
+            </div>
+          </>
+        )}
       </div>
     );
   };
@@ -245,7 +353,7 @@ const Orders = () => {
               >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-base font-semibold text-white">{order.restaurant_name}</h3>
-                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(order.status)}`}>
+                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${orderStatusClass}`}>
                   {order.status}
                 </span>
               </div>

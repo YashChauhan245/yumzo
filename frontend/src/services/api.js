@@ -72,6 +72,7 @@ export const ordersAPI = {
   placeOrder: (payload) => api.post('/user/orders', payload),
   getOrders: (params = {}) => api.get('/user/orders', { params }),
   getOrder: (orderId) => api.get(`/user/orders/${orderId}`),
+  getTracking: (orderId) => api.get(`/user/orders/${orderId}/tracking`),
   cancelOrder: (orderId, payload = {}) => api.patch(`/user/orders/${orderId}/cancel`, payload),
 };
 
@@ -97,6 +98,7 @@ export const driverAPI = {
   rejectOrder: (orderId, payload = {}) => api.post(`/driver/orders/${orderId}/reject`, payload),
   getAssignedOrders: () => api.get('/driver/orders/assigned'),
   updateOrderStatus: (orderId, status) => api.patch(`/driver/orders/${orderId}/status`, { status }),
+  updateOrderLocation: (orderId, payload) => api.patch(`/driver/orders/${orderId}/location`, payload),
 };
 
 export const reelsAPI = {

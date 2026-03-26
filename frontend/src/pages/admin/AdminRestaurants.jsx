@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
 import { adminAPI, getApiErrorMessage } from '../../services/api';
 import FormModal from '../../components/ui/FormModal';
@@ -13,7 +14,24 @@ const emptyRestaurantForm = {
   cuisine_type: '',
 };
 
+const emptyDishForm = {
+  name: '',
+  price: '',
+  category: '',
+  is_veg: false,
+};
+
+const hasRestaurantBasics = (restaurant) => {
+  return Boolean(restaurant.name?.trim() && restaurant.address?.trim() && restaurant.city?.trim());
+};
+
+const getValidPrice = (priceValue) => {
+  const price = Number(priceValue);
+  return Number.isFinite(price) && price > 0 ? price : null;
+};
+
 export default function AdminRestaurants() {
+  const [searchParams] = useSearchParams();
   const [restaurants, setRestaurants] = useState([]);
   const [form, setForm] = useState(emptyRestaurantForm);
   const [loading, setLoading] = useState(true);
@@ -28,6 +46,15 @@ export default function AdminRestaurants() {
     hasPrevPage: false,
     hasNextPage: false,
   });
+  const [activeDishRestaurantId, setActiveDishRestaurantId] = useState(null);
+  const [dishes, setDishes] = useState([]);
+  const [dishForm, setDishForm] = useState(emptyDishForm);
+  const [dishLoading, setDishLoading] = useState(false);
+  const [dishSaving, setDishSaving] = useState(false);
+  const [editingDish, setEditingDish] = useState(null);
+  const [dishEditForm, setDishEditForm] = useState(emptyDishForm);
+  const [isDishEditModalOpen, setIsDishEditModalOpen] = useState(false);
+  const [isFocusApplied, setIsFocusApplied] = useState(false);
 
   const loadRestaurants = useCallback(async (requestedPage = page) => {
     setLoading(true);
@@ -56,7 +83,7 @@ export default function AdminRestaurants() {
   const handleCreate = async (e) => {
     e.preventDefault();
 
-    if (!form.name || !form.address || !form.city) {
+    if (!hasRestaurantBasics(form)) {
       toast.error('Name, address and city are required');
       return;
     }
@@ -103,7 +130,7 @@ export default function AdminRestaurants() {
 
   const handleEditSave = async () => {
     if (!editingRestaurant) return;
-    if (!editForm.name.trim() || !editForm.city.trim() || !editForm.address.trim()) {
+    if (!hasRestaurantBasics(editForm)) {
       toast.error('Name, address and city are required');
       return;
     }
@@ -123,6 +150,141 @@ export default function AdminRestaurants() {
       toast.error(getApiErrorMessage(error, 'Failed to update restaurant'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const loadRestaurantDishes = async (restaurantId) => {
+    setDishLoading(true);
+    try {
+      const { data } = await adminAPI.getMenuItems({ restaurantId, page: 1, limit: 100 });
+      setDishes(data?.data?.menuItems || []);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to load dishes'));
+      setDishes([]);
+    } finally {
+      setDishLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const focusName = (searchParams.get('focus') || '').trim().toLowerCase();
+    if (!focusName || isFocusApplied || restaurants.length === 0) return;
+
+    const matchedRestaurant = restaurants.find(
+      (restaurant) => (restaurant.name || '').trim().toLowerCase() === focusName,
+    );
+
+    if (matchedRestaurant) {
+      setActiveDishRestaurantId(matchedRestaurant.id);
+      setDishForm(emptyDishForm);
+      loadRestaurantDishes(matchedRestaurant.id);
+    }
+
+    setIsFocusApplied(true);
+  }, [restaurants, searchParams, isFocusApplied]);
+
+  const handleToggleDishes = async (restaurantId) => {
+    if (activeDishRestaurantId === restaurantId) {
+      setActiveDishRestaurantId(null);
+      setDishes([]);
+      setDishForm(emptyDishForm);
+      return;
+    }
+
+    setActiveDishRestaurantId(restaurantId);
+    setDishForm(emptyDishForm);
+    await loadRestaurantDishes(restaurantId);
+  };
+
+  const handleAddDish = async (restaurantId) => {
+    if (!dishForm.name.trim() || !dishForm.price) {
+      toast.error('Dish name and price are required');
+      return;
+    }
+
+    const price = getValidPrice(dishForm.price);
+    if (price == null) {
+      toast.error('Price must be greater than 0');
+      return;
+    }
+
+    setDishSaving(true);
+    try {
+      await adminAPI.createMenuItem({
+        restaurant_id: restaurantId,
+        name: dishForm.name.trim(),
+        price,
+        category: dishForm.category.trim(),
+        is_veg: dishForm.is_veg,
+      });
+      toast.success('Dish added');
+      setDishForm(emptyDishForm);
+      await loadRestaurantDishes(restaurantId);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to add dish'));
+    } finally {
+      setDishSaving(false);
+    }
+  };
+
+  const handleDeleteDish = async (dishId, restaurantId) => {
+    setDishSaving(true);
+    try {
+      await adminAPI.deleteMenuItem(dishId);
+      toast.success('Dish deleted');
+      await loadRestaurantDishes(restaurantId);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to delete dish'));
+    } finally {
+      setDishSaving(false);
+    }
+  };
+
+  const openDishEditModal = (dish) => {
+    setEditingDish(dish);
+    setDishEditForm({
+      name: dish.name || '',
+      price: dish.price || '',
+      category: dish.category || '',
+      is_veg: !!dish.is_veg,
+    });
+    setIsDishEditModalOpen(true);
+  };
+
+  const closeDishEditModal = () => {
+    setIsDishEditModalOpen(false);
+    setEditingDish(null);
+    setDishEditForm(emptyDishForm);
+  };
+
+  const handleDishEditSave = async () => {
+    if (!editingDish || !activeDishRestaurantId) return;
+    if (!dishEditForm.name.trim() || !dishEditForm.price) {
+      toast.error('Dish name and price are required');
+      return;
+    }
+
+    const price = getValidPrice(dishEditForm.price);
+    if (price == null) {
+      toast.error('Price must be greater than 0');
+      return;
+    }
+
+    setDishSaving(true);
+    try {
+      await adminAPI.updateMenuItem(editingDish.id, {
+        name: dishEditForm.name.trim(),
+        price,
+        category: dishEditForm.category.trim(),
+        is_veg: dishEditForm.is_veg,
+      });
+      toast.success('Dish updated');
+      closeDishEditModal();
+      await loadRestaurantDishes(activeDishRestaurantId);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to update dish'));
+    } finally {
+      setDishSaving(false);
     }
   };
 
@@ -192,6 +354,12 @@ export default function AdminRestaurants() {
                       Edit
                     </button>
                     <button
+                      onClick={() => handleToggleDishes(restaurant.id)}
+                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
+                    >
+                      {activeDishRestaurantId === restaurant.id ? 'Close Dish Editor' : 'Edit Dishes'}
+                    </button>
+                    <button
                       onClick={() => handleDelete(restaurant.id)}
                       className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
                     >
@@ -199,6 +367,88 @@ export default function AdminRestaurants() {
                     </button>
                   </div>
                 </div>
+
+                {activeDishRestaurantId === restaurant.id ? (
+                  <div className="mt-4 rounded-xl border border-[#2A2A2A] bg-[#141414] p-3">
+                    <p className="text-sm font-medium text-white">Edit Dishes</p>
+
+                    <div className="mt-3 grid gap-2 md:grid-cols-4">
+                      <input
+                        placeholder="Dish name"
+                        value={dishForm.name}
+                        onChange={(e) => setDishForm((prev) => ({ ...prev, name: e.target.value }))}
+                        className={formFieldBaseClass}
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        placeholder="Price"
+                        value={dishForm.price}
+                        onChange={(e) => setDishForm((prev) => ({ ...prev, price: e.target.value }))}
+                        className={formFieldBaseClass}
+                      />
+                      <input
+                        placeholder="Category"
+                        value={dishForm.category}
+                        onChange={(e) => setDishForm((prev) => ({ ...prev, category: e.target.value }))}
+                        className={formFieldBaseClass}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddDish(restaurant.id)}
+                        disabled={dishSaving}
+                        className="rounded-xl bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#2F2F2F] disabled:opacity-60"
+                      >
+                        {dishSaving ? 'Saving...' : 'Add Dish'}
+                      </button>
+                    </div>
+
+                    <label className="mt-2 flex items-center gap-2 text-xs text-[#A1A1AA]">
+                      <input
+                        type="checkbox"
+                        checked={dishForm.is_veg}
+                        onChange={(e) => setDishForm((prev) => ({ ...prev, is_veg: e.target.checked }))}
+                      />
+                      Veg dish
+                    </label>
+
+                    {dishLoading ? (
+                      <p className="mt-3 text-sm text-[#A1A1AA]">Loading dishes...</p>
+                    ) : dishes.length === 0 ? (
+                      <p className="mt-3 text-sm text-[#A1A1AA]">No dishes yet.</p>
+                    ) : (
+                      <div className="mt-3 space-y-2">
+                        {dishes.map((dish) => (
+                          <div key={dish.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] p-2">
+                            <div>
+                              <p className="text-sm text-white">{dish.name}</p>
+                              <p className="text-xs text-[#A1A1AA]">
+                                ₹{Number(dish.price).toFixed(2)} • {dish.category || 'Uncategorized'} • {dish.is_veg ? 'Veg' : 'Non-veg'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openDishEditModal(dish)}
+                                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1 text-xs text-white hover:border-[#3A3A3A]"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteDish(dish.id, restaurant.id)}
+                                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1 text-xs text-white hover:border-[#3A3A3A]"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </article>
             ))}
 
@@ -248,6 +498,46 @@ export default function AdminRestaurants() {
           onChange={(e) => setEditForm((prev) => ({ ...prev, cuisine_type: e.target.value }))}
           className={formFieldFullClass}
         />
+      </FormModal>
+
+      <FormModal
+        isOpen={isDishEditModalOpen && !!editingDish}
+        title="Edit dish"
+        description="Update dish details and save changes."
+        onCancel={closeDishEditModal}
+        onSubmit={handleDishEditSave}
+        submitLabel="Save Dish"
+        submitting={dishSaving}
+      >
+        <input
+          placeholder="Dish name"
+          value={dishEditForm.name}
+          onChange={(e) => setDishEditForm((prev) => ({ ...prev, name: e.target.value }))}
+          className={formFieldFullClass}
+        />
+        <input
+          placeholder="Price"
+          type="number"
+          min="1"
+          step="0.01"
+          value={dishEditForm.price}
+          onChange={(e) => setDishEditForm((prev) => ({ ...prev, price: e.target.value }))}
+          className={formFieldFullClass}
+        />
+        <input
+          placeholder="Category"
+          value={dishEditForm.category}
+          onChange={(e) => setDishEditForm((prev) => ({ ...prev, category: e.target.value }))}
+          className={formFieldFullClass}
+        />
+        <label className="flex items-center gap-2 text-sm text-[#A1A1AA]">
+          <input
+            type="checkbox"
+            checked={dishEditForm.is_veg}
+            onChange={(e) => setDishEditForm((prev) => ({ ...prev, is_veg: e.target.checked }))}
+          />
+          Veg dish
+        </label>
       </FormModal>
     </AdminLayout>
   );

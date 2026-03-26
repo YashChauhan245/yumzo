@@ -9,7 +9,7 @@ const {
   getSmartComboSuggestion,
 } = require('../controllers/restaurantController');
 const { getCart, addToCart, updateQuantity, removeItem, clearCart } = require('../controllers/cartController');
-const { placeOrder, getOrderHistory, getOrder, cancelOrder } = require('../controllers/orderController');
+const { placeOrder, getOrderHistory, getOrder, cancelOrder, getOrderTracking } = require('../controllers/orderController');
 const { handlePayment, getPaymentStatus } = require('../controllers/paymentController');
 const { getReels, toggleReelLike, getReelComments, addReelComment } = require('../controllers/reelController');
 const { getAddresses, addAddress, editAddress, removeAddress } = require('../controllers/addressController');
@@ -139,6 +139,7 @@ router.post(
 );
 router.get('/orders', getOrderHistory);
 router.get('/orders/:id', getOrder);
+router.get('/orders/:id/tracking', [param('id').isUUID().withMessage('id must be a valid UUID')], getOrderTracking);
 router.patch(
   '/orders/:id/cancel',
   [

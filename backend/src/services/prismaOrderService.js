@@ -1,5 +1,42 @@
 const prisma = require('../config/prisma');
 
+// Shared include shapes keep Prisma calls consistent and easier to scan.
+const includeRestaurantDriver = {
+  restaurant: {
+    select: { name: true },
+  },
+  driver: {
+    select: { name: true },
+  },
+};
+
+const includeFullOrderDetails = {
+  restaurant: {
+    select: { name: true },
+  },
+  user: {
+    select: { id: true, name: true },
+  },
+  driver: {
+    select: { name: true },
+  },
+  items: {
+    orderBy: { id: 'asc' },
+  },
+};
+
+const includeDriverQueueOrderDetails = {
+  restaurant: {
+    select: { name: true },
+  },
+  user: {
+    select: { id: true, name: true },
+  },
+  items: {
+    orderBy: { id: 'asc' },
+  },
+};
+
 const formatOrderItem = (item) => ({
   id: item.id,
   menu_item_id: item.foodId,
@@ -26,6 +63,18 @@ const formatOrder = (order) => ({
   updated_at: order.updatedAt,
   items: Array.isArray(order.items) ? order.items.map(formatOrderItem) : undefined,
 });
+
+const withCustomerName = (order) => ({
+  ...formatOrder(order),
+  customer_name: order.user?.name || null,
+});
+
+const findOrderWithDetailsById = async (orderId) => {
+  return prisma.order.findUnique({
+    where: { id: orderId },
+    include: includeFullOrderDetails,
+  });
+};
 
 const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null, items }) => {
   const totalPrice = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
@@ -65,14 +114,7 @@ const findByUser = async (userId, { skip = 0, limit = 10 } = {}) => {
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where: { userId },
-      include: {
-        restaurant: {
-          select: { name: true },
-        },
-        driver: {
-          select: { name: true },
-        },
-      },
+      include: includeRestaurantDriver,
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -89,14 +131,7 @@ const findByUser = async (userId, { skip = 0, limit = 10 } = {}) => {
 const findByUserAll = async (userId) => {
   const orders = await prisma.order.findMany({
     where: { userId },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-    },
+    include: includeRestaurantDriver,
     orderBy: { createdAt: 'desc' },
   });
 
@@ -109,28 +144,10 @@ const findById = async (orderId, userId) => {
       id: orderId,
       userId,
     },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      user: {
-        select: { id: true, name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-      items: {
-        orderBy: { id: 'asc' },
-      },
-    },
+    include: includeFullOrderDetails,
   });
 
-  return order
-    ? {
-        ...formatOrder(order),
-        customer_name: order.user?.name || null,
-      }
-    : null;
+  return order ? withCustomerName(order) : null;
 };
 
 const updateStatus = async (orderId, status) => {
@@ -148,24 +165,11 @@ const findAvailableForDriver = async () => {
       status: 'confirmed',
       driverId: null,
     },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      user: {
-        select: { id: true, name: true },
-      },
-      items: {
-        orderBy: { id: 'asc' },
-      },
-    },
+    include: includeDriverQueueOrderDetails,
     orderBy: { createdAt: 'asc' },
   });
 
-  return orders.map((order) => ({
-    ...formatOrder(order),
-    customer_name: order.user?.name || null,
-  }));
+  return orders.map((order) => withCustomerName(order));
 };
 
 const acceptOrder = async ({ orderId, driverId }) => {
@@ -183,30 +187,9 @@ const acceptOrder = async ({ orderId, driverId }) => {
 
   if (result.count === 0) return null;
 
-  const updated = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      user: {
-        select: { id: true, name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-      items: {
-        orderBy: { id: 'asc' },
-      },
-    },
-  });
+  const updated = await findOrderWithDetailsById(orderId);
 
-  return updated
-    ? {
-        ...formatOrder(updated),
-        customer_name: updated.user?.name || null,
-      }
-    : null;
+  return updated ? withCustomerName(updated) : null;
 };
 
 const findAssignedToDriver = async (driverId) => {
@@ -217,27 +200,44 @@ const findAssignedToDriver = async (driverId) => {
         in: ['preparing', 'picked_up', 'out_for_delivery', 'delivered'],
       },
     },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      user: {
-        select: { id: true, name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-      items: {
-        orderBy: { id: 'asc' },
-      },
-    },
+    include: includeFullOrderDetails,
     orderBy: { createdAt: 'desc' },
   });
 
-  return orders.map((order) => ({
-    ...formatOrder(order),
-    customer_name: order.user?.name || null,
-  }));
+  return orders.map((order) => withCustomerName(order));
+};
+
+const findTrackableByDriver = async ({ orderId, driverId }) => {
+  return prisma.order.findFirst({
+    where: {
+      id: orderId,
+      driverId,
+      status: {
+        in: ['preparing', 'picked_up', 'out_for_delivery'],
+      },
+    },
+    select: {
+      id: true,
+      userId: true,
+      driverId: true,
+      status: true,
+    },
+  });
+};
+
+const findTrackableByUser = async ({ orderId, userId }) => {
+  return prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId,
+    },
+    select: {
+      id: true,
+      userId: true,
+      driverId: true,
+      status: true,
+    },
+  });
 };
 
 const updateDriverOrderStatus = async ({ orderId, driverId, status }) => {
@@ -256,30 +256,9 @@ const updateDriverOrderStatus = async ({ orderId, driverId, status }) => {
 
   if (result.count === 0) return null;
 
-  const updated = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      user: {
-        select: { id: true, name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-      items: {
-        orderBy: { id: 'asc' },
-      },
-    },
-  });
+  const updated = await findOrderWithDetailsById(orderId);
 
-  return updated
-    ? {
-        ...formatOrder(updated),
-        customer_name: updated.user?.name || null,
-      }
-    : null;
+  return updated ? withCustomerName(updated) : null;
 };
 
 const rejectAssignedOrder = async ({ orderId, driverId, reason = '' }) => {
@@ -314,30 +293,9 @@ const rejectAssignedOrder = async ({ orderId, driverId, reason = '' }) => {
 
   if (result.count === 0) return null;
 
-  const updated = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      user: {
-        select: { id: true, name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-      items: {
-        orderBy: { id: 'asc' },
-      },
-    },
-  });
+  const updated = await findOrderWithDetailsById(orderId);
 
-  return updated
-    ? {
-        ...formatOrder(updated),
-        customer_name: updated.user?.name || null,
-      }
-    : null;
+  return updated ? withCustomerName(updated) : null;
 };
 
 const cancelByUser = async ({ orderId, userId, reason = '' }) => {
@@ -373,14 +331,7 @@ const cancelByUser = async ({ orderId, userId, reason = '' }) => {
       status: 'cancelled',
       notes: nextNotes,
     },
-    include: {
-      restaurant: {
-        select: { name: true },
-      },
-      driver: {
-        select: { name: true },
-      },
-    },
+    include: includeRestaurantDriver,
   });
 
   return formatOrder(updated);
@@ -395,6 +346,8 @@ module.exports = {
   findAvailableForDriver,
   acceptOrder,
   findAssignedToDriver,
+  findTrackableByDriver,
+  findTrackableByUser,
   updateDriverOrderStatus,
   rejectAssignedOrder,
   cancelByUser,

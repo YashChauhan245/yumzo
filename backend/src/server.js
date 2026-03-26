@@ -69,10 +69,22 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // Rate limiting — skip in tests
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: isDev ? 1000 : 100,
+  message: {
+    success: false,
+    message: 'Too many requests, please try again shortly',
+  },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: (req) => {
+    if (process.env.NODE_ENV === 'test') return true;
+
+    const origin = req.get('origin') || '';
+    // Local frontend polling can be frequent; avoid 429 noise in development.
+    if (isDev && isLocalhostOrigin(origin)) return true;
+
+    return false;
+  },
 });
 app.use(globalLimiter);
 

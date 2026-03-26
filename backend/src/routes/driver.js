@@ -9,6 +9,7 @@ const {
   rejectOrder,
   getAssignedOrders,
   updateAssignedOrderStatus,
+  updateLiveOrderLocation,
 } = require('../controllers/driverController');
 
 const router = express.Router();
@@ -52,6 +53,31 @@ router.patch(
       .withMessage('status must be one of: picked_up, out_for_delivery, delivered'),
   ],
   updateAssignedOrderStatus,
+);
+router.patch(
+  '/orders/:orderId/location',
+  [
+    ...orderIdValidation,
+    body('latitude')
+      .isFloat({ min: -90, max: 90 })
+      .withMessage('latitude must be between -90 and 90'),
+    body('longitude')
+      .isFloat({ min: -180, max: 180 })
+      .withMessage('longitude must be between -180 and 180'),
+    body('accuracy')
+      .optional({ nullable: true })
+      .isFloat({ min: 0 })
+      .withMessage('accuracy must be a non-negative number'),
+    body('heading')
+      .optional({ nullable: true })
+      .isFloat({ min: 0, max: 360 })
+      .withMessage('heading must be between 0 and 360'),
+    body('speed')
+      .optional({ nullable: true })
+      .isFloat({ min: 0 })
+      .withMessage('speed must be a non-negative number'),
+  ],
+  updateLiveOrderLocation,
 );
 
 module.exports = router;

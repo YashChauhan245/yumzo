@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "backend-test-new-features",
+			"label": "backend-test",
 			"type": "shell",
 			"command": "npm",
 			"args": [
@@ -13,7 +13,7 @@
 			"isBackground": false
 		},
 		{
-			"label": "frontend-lint-after-polish",
+			"label": "frontend-lint",
 			"type": "shell",
 			"command": "npm",
 			"args": [
@@ -25,7 +25,7 @@
 			"isBackground": false
 		},
 		{
-			"label": "frontend-build-after-polish",
+			"label": "frontend-build",
 			"type": "shell",
 			"command": "npm",
 			"args": [
@@ -33,53 +33,6 @@
 				"frontend",
 				"run",
 				"build"
-			],
-			"isBackground": false
-		},
-		{
-			"label": "backend-tests-final-pass",
-			"type": "shell",
-			"command": "npm",
-			"args": [
-				"--prefix",
-				"backend",
-				"test"
-			],
-			"isBackground": false
-		},
-		{
-			"label": "frontend-lint-final-pass",
-			"type": "shell",
-			"command": "npm",
-			"args": [
-				"--prefix",
-				"frontend",
-				"run",
-				"lint"
-			],
-			"isBackground": false
-		},
-		{
-			"label": "frontend-build-final-pass",
-			"type": "shell",
-			"command": "npm",
-			"args": [
-				"--prefix",
-				"frontend",
-				"run",
-				"build"
-			],
-			"isBackground": false
-		},
-		{
-			"label": "frontend-lint-clean-check",
-			"type": "shell",
-			"command": "npm",
-			"args": [
-				"--prefix",
-				"frontend",
-				"run",
-				"lint"
 			],
 			"isBackground": false
 		}

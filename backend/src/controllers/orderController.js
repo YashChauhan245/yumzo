@@ -4,6 +4,35 @@ const prismaCartService = require('../services/prismaCartService');
 const prismaAddressService = require('../services/prismaAddressService');
 const { getPagination, buildPaginationMeta } = require('../utils/pagination');
 const { emitOrderUpdate, emitOrderStatusUpdate } = require('../config/socket');
+const { getOrderLocation, clearOrderLocation } = require('../services/liveTrackingService');
+
+// Keeps placeOrder linear by handling both free-text and saved-address paths here.
+const resolveDeliveryAddress = async ({ deliveryAddress, addressId, userId }) => {
+  let resolvedAddress = String(deliveryAddress || '').trim();
+
+  if (addressId) {
+    const selectedAddress = await prismaAddressService.findByIdForUser({
+      addressId,
+      userId,
+    });
+
+    if (!selectedAddress) {
+      const error = new Error('Selected address not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    resolvedAddress = prismaAddressService.formatAddressText(selectedAddress);
+  }
+
+  if (!resolvedAddress) {
+    const error = new Error('Delivery address is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return resolvedAddress;
+};
 
 // POST /api/user/orders - place an order from current cart items
 const placeOrder = async (req, res) => {
@@ -17,23 +46,11 @@ const placeOrder = async (req, res) => {
     const userId = req.user.id;
 
     // Step 1: Resolve final delivery address.
-    let resolvedAddress = String(delivery_address || '').trim();
-    if (address_id) {
-      const selectedAddress = await prismaAddressService.findByIdForUser({
-        addressId: address_id,
-        userId,
-      });
-
-      if (!selectedAddress) {
-        return res.status(404).json({ success: false, message: 'Selected address not found' });
-      }
-
-      resolvedAddress = prismaAddressService.formatAddressText(selectedAddress);
-    }
-
-    if (!resolvedAddress) {
-      return res.status(400).json({ success: false, message: 'Delivery address is required' });
-    }
+    const resolvedAddress = await resolveDeliveryAddress({
+      deliveryAddress: delivery_address,
+      addressId: address_id,
+      userId,
+    });
 
     // Step 2: Load cart items.
     const cartItems = await prismaCartService.getByUser(userId);
@@ -98,6 +115,9 @@ const placeOrder = async (req, res) => {
     });
   } catch (err) {
     console.error('placeOrder error:', err);
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ success: false, message: err.message });
+    }
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
@@ -161,6 +181,8 @@ const cancelOrder = async (req, res) => {
       updated_at: order.updated_at,
     });
 
+    clearOrderLocation(order.id);
+
     return res.status(200).json({
       success: true,
       message: 'Order cancelled successfully',
@@ -175,4 +197,31 @@ const cancelOrder = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, getOrderHistory, getOrder, cancelOrder };
+// GET /api/user/orders/:id/tracking - latest live location for customer's order.
+const getOrderTracking = async (req, res) => {
+  try {
+    const order = await prismaOrderService.findTrackableByUser({
+      orderId: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const location = getOrderLocation(order.id);
+    return res.status(200).json({
+      success: true,
+      data: {
+        tracking: location,
+        order_status: order.status,
+        driver_assigned: Boolean(order.driverId),
+      },
+    });
+  } catch (err) {
+    console.error('getOrderTracking error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+module.exports = { placeOrder, getOrderHistory, getOrder, cancelOrder, getOrderTracking };

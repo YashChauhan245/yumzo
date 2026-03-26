@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { driverAPI, getApiErrorMessage } from '../../services/api';
@@ -46,6 +46,16 @@ const rejectionReasons = [
   'Other',
 ];
 
+const TRACKABLE_STATUSES = ['out_for_delivery'];
+
+const getLocationPayload = (coords) => ({
+  latitude: coords.latitude,
+  longitude: coords.longitude,
+  accuracy: coords.accuracy,
+  heading: coords.heading,
+  speed: coords.speed,
+});
+
 export default function AssignedOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +65,14 @@ export default function AssignedOrders() {
   const [rejectOrderTarget, setRejectOrderTarget] = useState(null);
   const [selectedReason, setSelectedReason] = useState(rejectionReasons[0]);
   const [customReason, setCustomReason] = useState('');
+  const lastLocationSentAtRef = useRef(0);
+  const geolocationWatchRef = useRef(null);
+  const geolocationErrorShownRef = useRef(false);
+
+  const activeTrackedOrders = useMemo(
+    () => orders.filter((order) => TRACKABLE_STATUSES.includes(order.status)),
+    [orders],
+  );
 
   const loadOrders = async () => {
     setLoading(true);
@@ -71,6 +89,47 @@ export default function AssignedOrders() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    if (!activeTrackedOrders.length) return;
+    if (!('geolocation' in navigator)) return;
+
+    const pushLocation = async (coords) => {
+      const now = Date.now();
+      if (now - lastLocationSentAtRef.current < 15000) return;
+      lastLocationSentAtRef.current = now;
+
+      const payload = getLocationPayload(coords);
+
+      await Promise.all(
+        activeTrackedOrders.map((order) => driverAPI.updateOrderLocation(order.id, payload).catch(() => null)),
+      );
+    };
+
+    geolocationWatchRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        pushLocation(position.coords);
+      },
+      () => {
+        if (!geolocationErrorShownRef.current) {
+          geolocationErrorShownRef.current = true;
+          toast.error('Enable location permission to share live tracking with customer.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 10000,
+      },
+    );
+
+    return () => {
+      if (geolocationWatchRef.current != null) {
+        navigator.geolocation.clearWatch(geolocationWatchRef.current);
+        geolocationWatchRef.current = null;
+      }
+    };
+  }, [activeTrackedOrders]);
 
   const updateStatus = async (order) => {
     const nextStatus = nextStatusMap[order.status];
@@ -140,7 +199,7 @@ export default function AssignedOrders() {
               <p className="mt-2 text-3xl font-semibold text-white">{orders.length}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">Out For Delivery</p>
+              <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">Out for Delivery</p>
               <p className="mt-2 text-3xl font-semibold text-white">{orders.filter((order) => order.status === 'out_for_delivery').length}</p>
             </div>
             <div>

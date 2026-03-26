@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const restaurants = [
   {
     name: 'Spice Garden',
@@ -79,7 +81,9 @@ const StarRating = ({ rating }) => {
   );
 };
 
-const TopRestaurants = () => {
+const TopRestaurants = ({ viewAllTo = '/dashboard/manage-restaurants' }) => {
+  const getFocusLink = (restaurantName) => `${viewAllTo}?focus=${encodeURIComponent(restaurantName)}`;
+
   return (
     <div className="top-restaurants-card">
       <div className="chart-card-header">
@@ -87,12 +91,17 @@ const TopRestaurants = () => {
           <h3 className="chart-title">Top Restaurants</h3>
           <p className="chart-subtitle">Best performers this month</p>
         </div>
-        <button className="view-all-btn">View All →</button>
+        <Link to={viewAllTo} className="view-all-btn">View All →</Link>
       </div>
 
       <div className="restaurant-list">
         {restaurants.map((r, i) => (
-          <div key={r.name} className="restaurant-item">
+          <Link
+            key={r.name}
+            to={getFocusLink(r.name)}
+            className="restaurant-item"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
             <div className="restaurant-rank">#{i + 1}</div>
             <div className="restaurant-avatar">{r.avatar}</div>
             <div className="restaurant-details">
@@ -113,7 +122,7 @@ const TopRestaurants = () => {
               </div>
               <span className="rest-growth">{r.growth}</span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

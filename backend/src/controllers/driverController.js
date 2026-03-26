@@ -3,10 +3,12 @@ const bcrypt = require('bcryptjs');
 const prismaAuthService = require('../services/prismaAuthService');
 const prismaOrderService = require('../services/prismaOrderService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
-const { emitOrderStatusUpdate } = require('../config/socket');
+const { emitOrderLocationUpdate, emitOrderStatusUpdate } = require('../config/socket');
+const { setOrderLocation, clearOrderLocation } = require('../services/liveTrackingService');
 
 const DRIVER_STATUSES = ['picked_up', 'out_for_delivery', 'delivered'];
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const toNumberOrNull = (value) => (value == null ? null : Number(value));
 
 // POST /api/driver/login - login endpoint restricted to driver role.
 const loginDriver = async (req, res) => {
@@ -149,6 +151,8 @@ const rejectOrder = async (req, res) => {
       updated_at: new Date().toISOString(),
     });
 
+    clearOrderLocation(order.id);
+
     return res.status(200).json({
       success: true,
       message: 'Order rejected and returned to available queue',
@@ -214,6 +218,15 @@ const updateAssignedOrderStatus = async (req, res) => {
       updated_at: new Date().toISOString(),
     });
 
+    if (order.status === 'delivered') {
+      clearOrderLocation(order.id);
+      emitOrderLocationUpdate(order.id, {
+        order_id: order.id,
+        ended: true,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Order status updated successfully',
@@ -225,6 +238,50 @@ const updateAssignedOrderStatus = async (req, res) => {
   }
 };
 
+// PATCH /api/driver/orders/:orderId/location - update live location while delivering.
+const updateLiveOrderLocation = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({ success: false, errors: errors.array() });
+  }
+
+  try {
+    const orderId = req.params.orderId;
+    const trackableOrder = await prismaOrderService.findTrackableByDriver({
+      orderId,
+      driverId: req.user.id,
+    });
+
+    if (!trackableOrder) {
+      return res.status(404).json({
+        success: false,
+        message: 'Trackable assigned order not found',
+      });
+    }
+
+    const payload = setOrderLocation({
+      orderId,
+      driverId: req.user.id,
+      latitude: Number(req.body.latitude),
+      longitude: Number(req.body.longitude),
+      accuracy: toNumberOrNull(req.body.accuracy),
+      heading: toNumberOrNull(req.body.heading),
+      speed: toNumberOrNull(req.body.speed),
+    });
+
+    emitOrderLocationUpdate(orderId, payload);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Live location updated',
+      data: { tracking: payload },
+    });
+  } catch (error) {
+    console.error('updateLiveOrderLocation error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   loginDriver,
   getAvailableOrders,
@@ -232,4 +289,5 @@ module.exports = {
   rejectOrder,
   getAssignedOrders,
   updateAssignedOrderStatus,
+  updateLiveOrderLocation,
 };

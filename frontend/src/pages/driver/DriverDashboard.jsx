@@ -84,7 +84,7 @@ export default function DriverDashboard() {
     { label: 'Available Orders', value: availableOrders.length, helper: 'Ready to pick' },
     { label: 'Active Deliveries', value: activeOrders.length, helper: 'In progress' },
     { label: 'Completed Today', value: completedOrders.length, helper: 'Successful drops' },
-    { label: 'Weekly Earnings', value: `Rs ${revenueThisWeek}`, helper: 'Estimated' },
+    { label: 'Weekly Earnings', value: `₹${revenueThisWeek}`, helper: 'Estimated' },
   ];
 
   const handleAccept = async (orderId) => {

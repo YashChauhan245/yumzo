@@ -1,19 +1,37 @@
 const prisma = require('../config/prisma');
 
+const orderListInclude = {
+  user: { select: { name: true } },
+  driver: { select: { name: true } },
+  restaurant: { select: { name: true } },
+};
+
+const isDriverOnlyStatus = (status) => ['preparing', 'picked_up', 'out_for_delivery', 'delivered'].includes(status);
+const canAdminCancel = (status) => ['pending', 'confirmed'].includes(status);
+
+const buildAdminCancellationNote = (existingNotes, reason) => {
+  const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+  const cancellationNote = trimmedReason
+    ? `[Admin Cancellation] ${trimmedReason}`
+    : '[Admin Cancellation] Cancelled by admin';
+
+  return existingNotes ? `${existingNotes}\n${cancellationNote}` : cancellationNote;
+};
+
 const formatRestaurant = (restaurant) => ({
   id: restaurant.id,
-  owner_id: restaurant.ownerId,
+  owner_id: restaurant.ownerId ?? restaurant.owner_id,
   name: restaurant.name,
   description: restaurant.description,
-  cuisine_type: restaurant.cuisineType,
+  cuisine_type: restaurant.cuisineType ?? restaurant.cuisine_type,
   address: restaurant.address,
   city: restaurant.city,
   phone: restaurant.phone,
-  image_url: restaurant.imageUrl,
+  image_url: restaurant.imageUrl ?? restaurant.image_url,
   rating: restaurant.rating,
-  is_active: restaurant.isActive,
-  created_at: restaurant.createdAt,
-  updated_at: restaurant.updatedAt,
+  is_active: restaurant.isActive ?? restaurant.is_active,
+  created_at: restaurant.createdAt ?? restaurant.created_at,
+  updated_at: restaurant.updatedAt ?? restaurant.updated_at,
 });
 
 const formatMenuItem = (item) => ({
@@ -63,18 +81,37 @@ const getDashboardStats = async () => {
 };
 
 const listRestaurants = async ({ skip = 0, limit = 10 } = {}) => {
-  // Keep implementation simple with Prisma findMany + count.
-  const [restaurants, total] = await Promise.all([
-    prisma.restaurant.findMany({
-      where: { ownerId: { not: null } },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.restaurant.count({
-      where: { ownerId: { not: null } },
-    }),
+  const safeSkip = Number.isInteger(skip) && skip >= 0 ? skip : 0;
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? limit : 10;
+
+  // Use raw SQL for listing so legacy rows with NULL owner_id do not crash Prisma field conversion.
+  const [restaurants, countResult] = await Promise.all([
+    prisma.$queryRaw`
+      SELECT
+        id,
+        owner_id,
+        name,
+        description,
+        cuisine_type,
+        address,
+        city,
+        phone,
+        image_url,
+        rating,
+        is_active,
+        created_at,
+        updated_at
+      FROM restaurants
+      ORDER BY created_at DESC
+      OFFSET ${safeSkip}
+      LIMIT ${safeLimit}
+    `,
+    prisma.$queryRaw`SELECT COUNT(*)::int AS total FROM restaurants`,
   ]);
+
+  const total = Array.isArray(countResult) && countResult.length > 0
+    ? Number(countResult[0].total) || 0
+    : 0;
 
   return {
     rows: restaurants.map(formatRestaurant),
@@ -178,11 +215,7 @@ const deleteMenuItem = async (id) => {
 const listOrders = async ({ skip = 0, limit = 10 } = {}) => {
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
-      include: {
-        user: { select: { name: true } },
-        driver: { select: { name: true } },
-        restaurant: { select: { name: true } },
-      },
+      include: orderListInclude,
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -200,7 +233,7 @@ const updateOrderStatus = async (orderId, status, reason) => {
   const existing = await prisma.order.findUnique({ where: { id: orderId } });
   if (!existing) return null;
 
-  if (['preparing', 'picked_up', 'out_for_delivery', 'delivered'].includes(status)) {
+  if (isDriverOnlyStatus(status)) {
     const error = new Error('Delivery-stage statuses must be updated by driver');
     error.statusCode = 400;
     throw error;
@@ -218,7 +251,7 @@ const updateOrderStatus = async (orderId, status, reason) => {
     throw error;
   }
 
-  if (status === 'cancelled' && !['pending', 'confirmed'].includes(existing.status)) {
+  if (status === 'cancelled' && !canAdminCancel(existing.status)) {
     const error = new Error('Only pending or confirmed orders can be cancelled by admin');
     error.statusCode = 400;
     throw error;
@@ -226,21 +259,13 @@ const updateOrderStatus = async (orderId, status, reason) => {
 
   const data = { status };
   if (status === 'cancelled') {
-    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
-    const cancellationNote = trimmedReason
-      ? `[Admin Cancellation] ${trimmedReason}`
-      : '[Admin Cancellation] Cancelled by admin';
-    data.notes = existing.notes ? `${existing.notes}\n${cancellationNote}` : cancellationNote;
+    data.notes = buildAdminCancellationNote(existing.notes, reason);
   }
 
   const updated = await prisma.order.update({
     where: { id: orderId },
     data,
-    include: {
-      user: { select: { name: true } },
-      driver: { select: { name: true } },
-      restaurant: { select: { name: true } },
-    },
+    include: orderListInclude,
   });
 
   return formatOrder(updated);

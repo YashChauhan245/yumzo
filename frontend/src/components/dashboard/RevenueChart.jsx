@@ -1,25 +1,60 @@
 import { useEffect, useRef, useState } from 'react';
 
-const revenueData = [
-  { month: 'Jan', value: 18500 },
-  { month: 'Feb', value: 22300 },
-  { month: 'Mar', value: 19800 },
-  { month: 'Apr', value: 28400 },
-  { month: 'May', value: 25100 },
-  { month: 'Jun', value: 31200 },
-  { month: 'Jul', value: 29800 },
-  { month: 'Aug', value: 35600 },
-  { month: 'Sep', value: 33200 },
-  { month: 'Oct', value: 38900 },
-  { month: 'Nov', value: 41500 },
-  { month: 'Dec', value: 45230 },
-];
+const REVENUE_RANGE_STORAGE_KEY = 'yumzo-revenue-range';
+
+const revenueDataByRange = {
+  '7D': [
+    { label: 'Mon', value: 6200 },
+    { label: 'Tue', value: 6800 },
+    { label: 'Wed', value: 6400 },
+    { label: 'Thu', value: 7100 },
+    { label: 'Fri', value: 7600 },
+    { label: 'Sat', value: 8300 },
+    { label: 'Sun', value: 7900 },
+  ],
+  '1M': [
+    { label: 'W1', value: 21200 },
+    { label: 'W2', value: 22800 },
+    { label: 'W3', value: 24100 },
+    { label: 'W4', value: 25900 },
+  ],
+  '6M': [
+    { label: 'Jul', value: 29800 },
+    { label: 'Aug', value: 35600 },
+    { label: 'Sep', value: 33200 },
+    { label: 'Oct', value: 38900 },
+    { label: 'Nov', value: 41500 },
+    { label: 'Dec', value: 45230 },
+  ],
+  '12M': [
+    { label: 'Jan', value: 18500 },
+    { label: 'Feb', value: 22300 },
+    { label: 'Mar', value: 19800 },
+    { label: 'Apr', value: 28400 },
+    { label: 'May', value: 25100 },
+    { label: 'Jun', value: 31200 },
+    { label: 'Jul', value: 29800 },
+    { label: 'Aug', value: 35600 },
+    { label: 'Sep', value: 33200 },
+    { label: 'Oct', value: 38900 },
+    { label: 'Nov', value: 41500 },
+    { label: 'Dec', value: 45230 },
+  ],
+};
 
 const RevenueChart = () => {
   const canvasRef = useRef(null);
   const [hoveredPoint, setHoveredPoint] = useState(null);
-  const [activeRange, setActiveRange] = useState('12M');
+  const [activeRange, setActiveRange] = useState(() => {
+    const savedRange = localStorage.getItem(REVENUE_RANGE_STORAGE_KEY);
+    return ['7D', '1M', '6M', '12M'].includes(savedRange) ? savedRange : '12M';
+  });
   const animRef = useRef(0);
+  const activeData = revenueDataByRange[activeRange] || revenueDataByRange['12M'];
+
+  useEffect(() => {
+    localStorage.setItem(REVENUE_RANGE_STORAGE_KEY, activeRange);
+  }, [activeRange]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,9 +72,14 @@ const RevenueChart = () => {
     const padding = { top: 20, right: 20, bottom: 40, left: 60 };
     const chartW = width - padding.left - padding.right;
     const chartH = height - padding.top - padding.bottom;
+    const pointDivisor = Math.max(activeData.length - 1, 1);
 
-    const maxVal = Math.max(...revenueData.map(d => d.value)) * 1.1;
+    const maxVal = Math.max(...activeData.map((d) => d.value)) * 1.1;
     const minVal = 0;
+    const getX = (index) => padding.left + (chartW / pointDivisor) * index;
+    const getY = (value, eased) => {
+      return padding.top + chartH - ((value - minVal) / (maxVal - minVal)) * chartH * eased;
+    };
 
     let progress = 0;
     const duration = 60;
@@ -72,12 +112,12 @@ const RevenueChart = () => {
       }
 
       // X labels
-      revenueData.forEach((d, i) => {
-        const x = padding.left + (chartW / (revenueData.length - 1)) * i;
+      activeData.forEach((d, i) => {
+        const x = getX(i);
         ctx.fillStyle = isDark ? 'rgba(218, 226, 253, 0.5)' : 'rgba(100,116,139,0.8)';
         ctx.font = '11px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(d.month, x, height - 10);
+        ctx.fillText(d.label, x, height - 10);
       });
 
       // Area gradient
@@ -88,13 +128,13 @@ const RevenueChart = () => {
 
       // Draw area
       ctx.beginPath();
-      revenueData.forEach((d, i) => {
-        const x = padding.left + (chartW / (revenueData.length - 1)) * i;
-        const y = padding.top + chartH - ((d.value - minVal) / (maxVal - minVal)) * chartH * eased;
+      activeData.forEach((d, i) => {
+        const x = getX(i);
+        const y = getY(d.value, eased);
         if (i === 0) ctx.moveTo(x, y);
         else {
-          const prevX = padding.left + (chartW / (revenueData.length - 1)) * (i - 1);
-          const prevY = padding.top + chartH - ((revenueData[i - 1].value - minVal) / (maxVal - minVal)) * chartH * eased;
+          const prevX = getX(i - 1);
+          const prevY = getY(activeData[i - 1].value, eased);
           const cpx1 = prevX + (x - prevX) / 3;
           const cpx2 = prevX + 2 * (x - prevX) / 3;
           ctx.bezierCurveTo(cpx1, prevY, cpx2, y, x, y);
@@ -110,13 +150,13 @@ const RevenueChart = () => {
 
       // Draw line
       ctx.beginPath();
-      revenueData.forEach((d, i) => {
-        const x = padding.left + (chartW / (revenueData.length - 1)) * i;
-        const y = padding.top + chartH - ((d.value - minVal) / (maxVal - minVal)) * chartH * eased;
+      activeData.forEach((d, i) => {
+        const x = getX(i);
+        const y = getY(d.value, eased);
         if (i === 0) ctx.moveTo(x, y);
         else {
-          const prevX = padding.left + (chartW / (revenueData.length - 1)) * (i - 1);
-          const prevY = padding.top + chartH - ((revenueData[i - 1].value - minVal) / (maxVal - minVal)) * chartH * eased;
+          const prevX = getX(i - 1);
+          const prevY = getY(activeData[i - 1].value, eased);
           const cpx1 = prevX + (x - prevX) / 3;
           const cpx2 = prevX + 2 * (x - prevX) / 3;
           ctx.bezierCurveTo(cpx1, prevY, cpx2, y, x, y);
@@ -127,9 +167,9 @@ const RevenueChart = () => {
       ctx.stroke();
 
       // Draw dots
-      revenueData.forEach((d, i) => {
-        const x = padding.left + (chartW / (revenueData.length - 1)) * i;
-        const y = padding.top + chartH - ((d.value - minVal) / (maxVal - minVal)) * chartH * eased;
+      activeData.forEach((d, i) => {
+        const x = getX(i);
+        const y = getY(d.value, eased);
 
         if (hoveredPoint === i) {
           // Glow
@@ -173,7 +213,7 @@ const RevenueChart = () => {
     animate();
 
     return () => cancelAnimationFrame(animRef.current);
-  }, [hoveredPoint]);
+  }, [hoveredPoint, activeData]);
 
   const handleMouseMove = (e) => {
     const canvas = canvasRef.current;
@@ -181,11 +221,11 @@ const RevenueChart = () => {
     const x = e.clientX - rect.left;
     const padding = { left: 60, right: 20 };
     const chartW = rect.width - padding.left - padding.right;
-    const step = chartW / (revenueData.length - 1);
+    const step = chartW / Math.max(activeData.length - 1, 1);
 
     let closest = -1;
     let minDist = Infinity;
-    revenueData.forEach((_, i) => {
+    activeData.forEach((_, i) => {
       const px = padding.left + step * i;
       const dist = Math.abs(x - px);
       if (dist < minDist && dist < 20) {

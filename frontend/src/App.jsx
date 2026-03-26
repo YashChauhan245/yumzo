@@ -109,6 +109,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/dashboard/manage-restaurants"
+            element={
+              <ProtectedRoute allowedRoles={['customer', 'admin']} allowedEmails={DASHBOARD_ALLOWED_EMAILS}>
+                <AdminRestaurants />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Driver-only routes */}
           <Route

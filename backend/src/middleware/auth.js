@@ -15,10 +15,7 @@ const canonicalizeEmail = (email) => {
   return normalized;
 };
 
-const normalizeRole = (role) => {
-  if (role === 'delivery_agent') return 'driver';
-  return role;
-};
+const normalizeRole = (role) => (role === 'delivery_agent' ? 'driver' : role);
 
 // Middleware to check if user is logged in via JWT
 const authenticate = (req, res, next) => {
@@ -78,13 +75,19 @@ const requireAdmin = (req, res, next) => {
   const userRole = normalizeRole(req.user.role);
   const userEmail = canonicalizeEmail(req.user.email);
   const canonicalAdminEmail = canonicalizeEmail(ADMIN_EMAIL);
+  const isAdminEmail = Boolean(ADMIN_EMAIL) && userEmail === canonicalAdminEmail;
+
+  if (ADMIN_EMAIL && !isAdminEmail) {
+    return res.status(403).json({ success: false, message: 'Admin access is restricted for this account' });
+  }
+
+  // Allow canonical ADMIN_EMAIL even when token role is stale (e.g., old login token).
+  if (isAdminEmail) {
+    return next();
+  }
 
   if (userRole !== 'admin') {
     return res.status(403).json({ success: false, message: 'You do not have permission to perform this action' });
-  }
-
-  if (ADMIN_EMAIL && userEmail !== canonicalAdminEmail) {
-    return res.status(403).json({ success: false, message: 'Admin access is restricted for this account' });
   }
 
   return next();

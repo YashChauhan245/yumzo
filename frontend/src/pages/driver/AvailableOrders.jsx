@@ -16,6 +16,7 @@ export default function AvailableOrders() {
   const [loading, setLoading] = useState(true);
   const [acceptingOrderId, setAcceptingOrderId] = useState('');
   const previousCountRef = useRef(0);
+  const lastPollErrorToastAtRef = useRef(0);
 
   const loadOrders = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -30,7 +31,12 @@ export default function AvailableOrders() {
       previousCountRef.current = nextOrders.length;
       setOrders(nextOrders);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Failed to load available orders'));
+      const now = Date.now();
+      const shouldToast = !silent || (now - lastPollErrorToastAtRef.current > 60000);
+      if (shouldToast) {
+        toast.error(getApiErrorMessage(error, 'Failed to load available orders'));
+        lastPollErrorToastAtRef.current = now;
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -39,10 +45,11 @@ export default function AvailableOrders() {
   useEffect(() => {
     loadOrders();
 
-    // Poll every 10s so drivers see new requests quickly.
+    // Poll every 20s and skip background tabs to reduce unnecessary API load.
     const poll = setInterval(() => {
+      if (document.hidden) return;
       loadOrders(true);
-    }, 10000);
+    }, 20000);
 
     return () => clearInterval(poll);
   }, []);

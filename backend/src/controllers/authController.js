@@ -6,18 +6,49 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 const authService = prismaAuthService;
 const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || 'yashchau.work@gmail.com').trim().toLowerCase();
 
-// Keep email normalization very simple so it is easy to explain in interviews.
+// Keep DB lookup/storage normalization simple and predictable.
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
+// Use canonicalization only for admin access comparison.
+const canonicalizeEmail = (email) => {
+  const normalized = normalizeEmail(email);
+  const [localPart, domain] = normalized.split('@');
+  if (!localPart || !domain) return normalized;
+
+  if (domain === 'gmail.com') {
+    const baseLocal = localPart.split('+')[0].replace(/\./g, '');
+    return `${baseLocal}@${domain}`;
+  }
+
+  return normalized;
+};
+
 const toAppRole = (role) => (role === 'delivery_agent' ? 'driver' : role);
+const normalizeRequestedRole = (role) => (role === 'delivery_agent' ? 'driver' : (role || 'customer'));
+const toDbRole = (role) => (role === 'driver' ? 'delivery_agent' : role);
+
+const buildAuthResponse = (user, role) => {
+  const tokenPayload = { id: user.id, email: user.email, role };
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
+
+  const { password: _hiddenPassword, ...safeUser } = user;
+  safeUser.role = role;
+
+  return {
+    user: safeUser,
+    accessToken,
+    refreshToken,
+  };
+};
 
 // Rule used in this project:
 // 1) Only ADMIN_EMAIL gets admin access in token/response.
 // 2) If any other account has DB role=admin, we treat it as customer in app responses.
 const resolveEffectiveRole = ({ email, role }) => {
   const normalizedRole = toAppRole(role);
-  const normalizedEmail = normalizeEmail(email);
-  const normalizedAdminEmail = normalizeEmail(ADMIN_EMAIL);
+  const normalizedEmail = canonicalizeEmail(email);
+  const normalizedAdminEmail = canonicalizeEmail(ADMIN_EMAIL);
 
   if (!ADMIN_EMAIL) return normalizedRole;
 
@@ -36,8 +67,8 @@ const signup = async (req, res) => {
 
   const { name, email, password, phone, role } = req.body;
   const normalizedEmail = normalizeEmail(email);
-  const normalizedRole = role === 'delivery_agent' ? 'driver' : (role || 'customer');
-  const dbRole = normalizedRole === 'driver' ? 'delivery_agent' : normalizedRole;
+  const appRole = normalizeRequestedRole(role);
+  const dbRole = toDbRole(appRole);
 
   try {
     // Check if email is already registered
@@ -56,19 +87,13 @@ const signup = async (req, res) => {
       role: dbRole,
     });
 
-    const responseUser = {
-      ...user,
-      role: resolveEffectiveRole({ email: user.email, role: dbRole }),
-    };
-
-    const tokenPayload = { id: user.id, email: user.email, role: responseUser.role };
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
+    const effectiveRole = resolveEffectiveRole({ email: user.email, role: dbRole });
+    const responseData = buildAuthResponse(user, effectiveRole);
 
     return res.status(201).json({
       success: true,
       message: 'Account created successfully',
-      data: { user: responseUser, accessToken, refreshToken },
+      data: responseData,
     });
   } catch (err) {
     console.error('Signup error:', err);
@@ -102,18 +127,12 @@ const login = async (req, res) => {
     }
 
     const effectiveRole = resolveEffectiveRole(user);
-    const tokenPayload = { id: user.id, email: user.email, role: effectiveRole };
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    // Don't send the password hash in the response
-    const { password: _pw, ...publicUser } = user;
-    publicUser.role = effectiveRole;
+    const responseData = buildAuthResponse(user, effectiveRole);
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: { user: publicUser, accessToken, refreshToken },
+      data: responseData,
     });
   } catch (err) {
     console.error('Login error:', err);
