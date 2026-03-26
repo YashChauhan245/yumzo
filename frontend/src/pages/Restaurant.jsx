@@ -12,6 +12,15 @@ const withFallbackImage = (event, fallbackSrc) => {
   event.currentTarget.src = fallbackSrc;
 };
 
+const MENU_CACHE_TTL_MS = 60 * 1000;
+const REVIEWS_CACHE_TTL_MS = 60 * 1000;
+const menuCache = new Map();
+const reviewsCache = new Map();
+
+const isFreshCache = (entry, ttlMs) => {
+  return Boolean(entry) && Date.now() - entry.savedAt < ttlMs;
+};
+
 const Restaurant = () => {
   const { id } = useParams();
   const [restaurant, setRestaurant] = useState(null);
@@ -37,12 +46,27 @@ const Restaurant = () => {
   const [smartCombo, setSmartCombo] = useState(null);
   const [addingCombo, setAddingCombo] = useState(false);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [id]);
+
   const loadMenu = useCallback(async (selectedCategory = category) => {
     setLoading(true);
     try {
-      const { data } = await restaurantsAPI.getMenu(id, {
-        category: selectedCategory || undefined,
-      });
+      const menuCacheKey = `${id}::${selectedCategory || 'all'}`;
+      const cachedMenu = menuCache.get(menuCacheKey);
+
+      let data;
+      if (isFreshCache(cachedMenu, MENU_CACHE_TTL_MS)) {
+        data = cachedMenu.data;
+      } else {
+        const response = await restaurantsAPI.getMenu(id, {
+          category: selectedCategory || undefined,
+        });
+        data = response?.data;
+        menuCache.set(menuCacheKey, { data, savedAt: Date.now() });
+      }
+
       setRestaurant(data?.data?.restaurant || null);
       setMenuItems(data?.data?.menuItems || []);
     } catch (error) {
@@ -60,7 +84,18 @@ const Restaurant = () => {
 
   const loadReviews = useCallback(async (requestedPage = 1) => {
     try {
-      const { data } = await restaurantsAPI.getReviews(id, { page: requestedPage, limit: 5 });
+      const reviewsCacheKey = `${id}::${requestedPage}`;
+      const cachedReviews = reviewsCache.get(reviewsCacheKey);
+
+      let data;
+      if (isFreshCache(cachedReviews, REVIEWS_CACHE_TTL_MS)) {
+        data = cachedReviews.data;
+      } else {
+        const response = await restaurantsAPI.getReviews(id, { page: requestedPage, limit: 5 });
+        data = response?.data;
+        reviewsCache.set(reviewsCacheKey, { data, savedAt: Date.now() });
+      }
+
       setReviews(data?.data?.reviews || []);
       setAverageRating(Number(data?.data?.average_rating || 0));
       setReviewsPagination(
@@ -73,9 +108,9 @@ const Restaurant = () => {
       );
     } catch {
       setReviews([]);
-      setAverageRating(Number(restaurant?.rating || 0));
+      setAverageRating(0);
     }
-  }, [id, restaurant?.rating]);
+  }, [id]);
 
   useEffect(() => {
     loadReviews(reviewsPage);
@@ -116,6 +151,15 @@ const Restaurant = () => {
         rating: Number(reviewRating),
         review_text: reviewText.trim() || undefined,
       });
+
+      // Review submission changes restaurant aggregates and paginated review list.
+      for (const key of reviewsCache.keys()) {
+        if (key.startsWith(`${id}::`)) reviewsCache.delete(key);
+      }
+      for (const key of menuCache.keys()) {
+        if (key.startsWith(`${id}::`)) menuCache.delete(key);
+      }
+
       toast.success('Review saved');
       setReviewText('');
       await Promise.all([loadReviews(1), loadMenu(category)]);

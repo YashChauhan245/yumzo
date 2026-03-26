@@ -34,20 +34,21 @@ export default function AdminMenu() {
     hasNextPage: false,
   });
 
-  const loadData = useCallback(async (selectedRestaurantId = restaurantIdFilter, requestedPage = page) => {
+  const loadRestaurantsOnce = useCallback(async () => {
+    if (restaurants.length > 0) return;
+    const restaurantsRes = await adminAPI.getRestaurants({ page: 1, limit: 30 });
+    setRestaurants(restaurantsRes?.data?.data?.restaurants || []);
+  }, [restaurants.length]);
+
+  const loadMenuItems = useCallback(async (selectedRestaurantId = restaurantIdFilter, requestedPage = page) => {
     setLoading(true);
     try {
-      // Step 1: load restaurant list for dropdown options.
-      const restaurantsRes = await adminAPI.getRestaurants({ page: 1, limit: 30 });
-
-      // Step 2: load menu list with optional restaurant filter.
       const menuRes = await adminAPI.getMenuItems(
         selectedRestaurantId
           ? { restaurantId: selectedRestaurantId, page: requestedPage, limit: 8 }
           : { page: requestedPage, limit: 8 },
       );
 
-      setRestaurants(restaurantsRes?.data?.data?.restaurants || []);
       setMenuItems(menuRes?.data?.data?.menuItems || []);
       setPagination(
         menuRes?.data?.pagination || {
@@ -65,8 +66,9 @@ export default function AdminMenu() {
   }, [restaurantIdFilter, page]);
 
   useEffect(() => {
-    loadData(restaurantIdFilter, page);
-  }, [loadData, restaurantIdFilter, page]);
+    loadRestaurantsOnce();
+    loadMenuItems(restaurantIdFilter, page);
+  }, [loadRestaurantsOnce, loadMenuItems, restaurantIdFilter, page]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -84,7 +86,7 @@ export default function AdminMenu() {
       });
       toast.success('Menu item added');
       setForm(emptyForm);
-      await loadData(restaurantIdFilter, page);
+      await loadMenuItems(restaurantIdFilter, page);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to add menu item'));
     } finally {
@@ -142,7 +144,7 @@ export default function AdminMenu() {
       });
       toast.success('Menu item updated');
       closeEditModal();
-      await loadData(restaurantIdFilter, page);
+      await loadMenuItems(restaurantIdFilter, page);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to update menu item'));
     } finally {

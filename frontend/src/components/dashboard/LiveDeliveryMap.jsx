@@ -12,6 +12,7 @@ const LiveDeliveryMap = () => {
   const canvasRef = useRef(null);
   const animRef = useRef(0);
   const timeRef = useRef(0);
+  const frameGateRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -28,7 +29,30 @@ const LiveDeliveryMap = () => {
     const height = rect.height;
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
+    let isVisible = true;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = Boolean(entry?.isIntersecting);
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(canvas);
+
     const animate = () => {
+      if (document.hidden || !isVisible) {
+        animRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      // Cap to ~30fps to keep dashboard smooth on low-end devices.
+      const now = performance.now();
+      if (now - frameGateRef.current < 33) {
+        animRef.current = requestAnimationFrame(animate);
+        return;
+      }
+      frameGateRef.current = now;
+
       timeRef.current += 0.02;
       ctx.clearRect(0, 0, width, height);
 
@@ -143,7 +167,10 @@ const LiveDeliveryMap = () => {
 
     animate();
 
-    return () => cancelAnimationFrame(animRef.current);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(animRef.current);
+    };
   }, []);
 
   return (

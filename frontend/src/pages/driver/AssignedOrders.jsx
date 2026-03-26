@@ -56,6 +56,33 @@ const getLocationPayload = (coords) => ({
   speed: coords.speed,
 });
 
+const getGoogleMapsDirectionsUrl = (addressText) => {
+  const destination = encodeURIComponent(addressText || 'India');
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
+};
+
+const openExternalNavigation = (addressText) => {
+  const destination = String(addressText || '').trim();
+  const webUrl = getGoogleMapsDirectionsUrl(destination);
+  const userAgent = navigator.userAgent || '';
+
+  if (/Android/i.test(userAgent)) {
+    const appUrl = `google.navigation:q=${encodeURIComponent(destination || 'India')}&mode=d`;
+    window.location.href = appUrl;
+    setTimeout(() => window.open(webUrl, '_blank', 'noopener,noreferrer'), 1200);
+    return;
+  }
+
+  if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    const appUrl = `comgooglemaps://?daddr=${encodeURIComponent(destination || 'India')}&directionsmode=driving`;
+    window.location.href = appUrl;
+    setTimeout(() => window.open(webUrl, '_blank', 'noopener,noreferrer'), 1200);
+    return;
+  }
+
+  window.open(webUrl, '_blank', 'noopener,noreferrer');
+};
+
 export default function AssignedOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +92,7 @@ export default function AssignedOrders() {
   const [rejectOrderTarget, setRejectOrderTarget] = useState(null);
   const [selectedReason, setSelectedReason] = useState(rejectionReasons[0]);
   const [customReason, setCustomReason] = useState('');
+  const [expandedMapOrderId, setExpandedMapOrderId] = useState('');
   const lastLocationSentAtRef = useRef(0);
   const geolocationWatchRef = useRef(null);
   const geolocationErrorShownRef = useRef(false);
@@ -179,6 +207,10 @@ export default function AssignedOrders() {
     }
   };
 
+  const toggleMapForOrder = (orderId) => {
+    setExpandedMapOrderId((prev) => (prev === orderId ? '' : orderId));
+  };
+
   return (
     <div className="min-h-screen bg-[#0B0B0B] px-4 py-6 md:px-8">
       <div className="mx-auto max-w-5xl">
@@ -222,6 +254,9 @@ export default function AssignedOrders() {
             {orders.map((order) => {
               const nextStatus = nextStatusMap[order.status];
               const cta = getStatusActionLabel(nextStatus);
+              const customerMapQuery = encodeURIComponent(order.delivery_address || 'India');
+              const customerMapSrc = `https://www.google.com/maps?q=${customerMapQuery}&z=15&output=embed`;
+              const isMapOpen = expandedMapOrderId === order.id;
 
               return (
                 <article key={order.id} className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4">
@@ -240,6 +275,37 @@ export default function AssignedOrders() {
                   </div>
 
                   <p className="mt-2 text-sm text-[#A1A1AA]">Address: {order.delivery_address}</p>
+
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleMapForOrder(order.id)}
+                      className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A]"
+                    >
+                      {isMapOpen ? 'Hide customer map' : 'View customer location map'}
+                    </button>
+                  </div>
+
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => openExternalNavigation(order.delivery_address)}
+                      className="inline-flex rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A]"
+                    >
+                      Open in Maps App
+                    </button>
+                  </div>
+
+                  {isMapOpen ? (
+                    <div className="mt-3 overflow-hidden rounded-lg border border-[#2A2A2A]">
+                      <iframe
+                        title={`assigned-order-map-${order.id}`}
+                        src={customerMapSrc}
+                        className="h-52 w-full"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : null}
 
                   <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#0B0B0B]">
                     <div

@@ -11,12 +11,40 @@ const getAveragePayout = (orders) => {
   return Math.round(total / orders.length);
 };
 
+const getGoogleMapsDirectionsUrl = (addressText) => {
+  const destination = encodeURIComponent(addressText || 'India');
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
+};
+
+const openExternalNavigation = (addressText) => {
+  const destination = String(addressText || '').trim();
+  const webUrl = getGoogleMapsDirectionsUrl(destination);
+  const userAgent = navigator.userAgent || '';
+
+  if (/Android/i.test(userAgent)) {
+    const appUrl = `google.navigation:q=${encodeURIComponent(destination || 'India')}&mode=d`;
+    window.location.href = appUrl;
+    setTimeout(() => window.open(webUrl, '_blank', 'noopener,noreferrer'), 1200);
+    return;
+  }
+
+  if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    const appUrl = `comgooglemaps://?daddr=${encodeURIComponent(destination || 'India')}&directionsmode=driving`;
+    window.location.href = appUrl;
+    setTimeout(() => window.open(webUrl, '_blank', 'noopener,noreferrer'), 1200);
+    return;
+  }
+
+  window.open(webUrl, '_blank', 'noopener,noreferrer');
+};
+
 export default function AvailableOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [acceptingOrderId, setAcceptingOrderId] = useState('');
   const previousCountRef = useRef(0);
   const lastPollErrorToastAtRef = useRef(0);
+  const [expandedMapOrderId, setExpandedMapOrderId] = useState('');
 
   const loadOrders = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -65,6 +93,10 @@ export default function AvailableOrders() {
     } finally {
       setAcceptingOrderId('');
     }
+  };
+
+  const toggleMapForOrder = (orderId) => {
+    setExpandedMapOrderId((prev) => (prev === orderId ? '' : orderId));
   };
 
   return (
@@ -127,6 +159,37 @@ export default function AvailableOrders() {
                 </div>
 
                 <p className="mt-2 text-sm text-[#A1A1AA]">Address: {order.delivery_address}</p>
+
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleMapForOrder(order.id)}
+                    className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A]"
+                  >
+                    {expandedMapOrderId === order.id ? 'Hide customer map' : 'View customer location map'}
+                  </button>
+                </div>
+
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => openExternalNavigation(order.delivery_address)}
+                    className="inline-flex rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A]"
+                  >
+                    Open in Maps App
+                  </button>
+                </div>
+
+                {expandedMapOrderId === order.id ? (
+                  <div className="mt-3 overflow-hidden rounded-lg border border-[#2A2A2A]">
+                    <iframe
+                      title={`available-order-map-${order.id}`}
+                      src={`https://www.google.com/maps?q=${encodeURIComponent(order.delivery_address || 'India')}&z=15&output=embed`}
+                      className="h-52 w-full"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : null}
 
                 <div className="mt-3 flex items-center gap-2">
                   <button

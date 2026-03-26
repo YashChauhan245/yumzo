@@ -6,6 +6,8 @@ import EmptyState from '../components/ui/EmptyState';
 import { CartSkeleton } from '../components/ui/Skeletons';
 import { addressesAPI, cartAPI, getApiErrorMessage, ordersAPI, paymentsAPI } from '../services/api';
 
+const toFixedCoord = (value) => Number(value).toFixed(6);
+
 const Cart = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
@@ -25,6 +27,10 @@ const Cart = () => {
   const [addingAddress, setAddingAddress] = useState(false);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [capturingGps, setCapturingGps] = useState(false);
+
+  const mapQuery = encodeURIComponent(deliveryAddress || 'India');
+  const mapSrc = `https://www.google.com/maps?q=${mapQuery}&z=15&output=embed`;
 
   const loadCart = async () => {
     setLoading(true);
@@ -210,6 +216,36 @@ const Cart = () => {
     }
   };
 
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported in this browser.');
+      return;
+    }
+
+    setCapturingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const gpsAddress = `GPS: ${toFixedCoord(latitude)}, ${toFixedCoord(longitude)}`;
+
+        // GPS location is treated as manual address text for order placement.
+        setSelectedAddressId('');
+        setDeliveryAddress(gpsAddress);
+        setCapturingGps(false);
+        toast.success('Current location added.');
+      },
+      () => {
+        toast.error('Could not fetch your current location.');
+        setCapturingGps(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 10000,
+      },
+    );
+  };
+
   return (
     <AppLayout>
       <section className="surface-card rounded-2xl p-6 md:p-7">
@@ -367,6 +403,29 @@ const Cart = () => {
               disabled={Boolean(selectedAddressId)}
               className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3A3A3A]"
             />
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                disabled={capturingGps}
+                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A] disabled:opacity-60"
+              >
+                {capturingGps ? 'Getting GPS location...' : 'Use current GPS location'}
+              </button>
+              <span className="text-xs text-[#A1A1AA]">Manual address input also supported.</span>
+            </div>
+
+            {deliveryAddress ? (
+              <div className="mt-3 overflow-hidden rounded-lg border border-[#2A2A2A]">
+                <iframe
+                  title="checkout-address-map"
+                  src={mapSrc}
+                  className="h-48 w-full"
+                  loading="lazy"
+                />
+              </div>
+            ) : null}
 
             <div className="mt-3 rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-3">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#A1A1AA]">Add new address</p>
