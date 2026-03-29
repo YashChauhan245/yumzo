@@ -103,7 +103,7 @@ export default function AdminOrders() {
       title="Orders Overview"
       subtitle="View all orders and monitor their status."
     >
-      <section className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5">
+      <section className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
         {loading ? (
           <p className="text-sm text-[#A1A1AA]">Loading orders...</p>
         ) : orders.length === 0 ? (
@@ -115,7 +115,7 @@ export default function AdminOrders() {
               const canEditStatus = statusOptions.length > 1;
 
               return (
-                <article key={order.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
+                <article key={order.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4 transition-all duration-300 hover:border-[#3A3A3A] hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(0,0,0,0.22)]">
                 <div className="grid gap-3 md:grid-cols-[1fr_auto]">
                   <div>
                     <p className="font-medium text-white">Order: {order.id}</p>
@@ -130,7 +130,7 @@ export default function AdminOrders() {
                       value={order.status}
                       disabled={savingOrderId === order.id || !canEditStatus}
                       onChange={(e) => handleStatusChange(order.id, order.status, e.target.value)}
-                      className="rounded-xl border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-2 text-sm text-white"
+                      className="rounded-xl border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-2 text-sm text-white transition-all hover:border-[#EE6A2C]/55"
                     >
                       {statusOptions.map((status) => (
                         <option key={status} value={status}>{status}</option>

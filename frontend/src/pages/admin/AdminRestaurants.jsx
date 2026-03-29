@@ -293,7 +293,7 @@ export default function AdminRestaurants() {
       title="Restaurant Management"
       subtitle="Add, edit, and remove restaurant listings."
     >
-      <section className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5">
+      <section className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
         <h2 className="text-lg font-semibold">Add Restaurant</h2>
         <form onSubmit={handleCreate} className="mt-4 grid gap-3 md:grid-cols-2">
           <input
@@ -323,14 +323,14 @@ export default function AdminRestaurants() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-xl bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#2F2F2F] disabled:opacity-60"
+            className="rounded-xl bg-linear-to-r from-[#EE6A2C] to-[#F68C3E] px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-105 disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Add Restaurant'}
           </button>
         </form>
       </section>
 
-      <section className="mt-5 rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5">
+      <section className="mt-5 rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
         <h2 className="text-lg font-semibold">All Restaurants</h2>
 
         {loading ? (
@@ -340,7 +340,7 @@ export default function AdminRestaurants() {
         ) : (
           <div className="mt-4 space-y-3">
             {restaurants.map((restaurant) => (
-              <article key={restaurant.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
+              <article key={restaurant.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4 transition-all duration-300 hover:border-[#3A3A3A] hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(0,0,0,0.22)]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium text-white">{restaurant.name}</p>
@@ -349,19 +349,19 @@ export default function AdminRestaurants() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(restaurant)}
-                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white transition-all hover:border-[#EE6A2C]/55 hover:bg-[#18120E]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleToggleDishes(restaurant.id)}
-                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white transition-all hover:border-[#EE6A2C]/55 hover:bg-[#18120E]"
                     >
                       {activeDishRestaurantId === restaurant.id ? 'Close Dish Editor' : 'Edit Dishes'}
                     </button>
                     <button
                       onClick={() => handleDelete(restaurant.id)}
-                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white transition-all hover:border-rose-500/55 hover:bg-rose-500/10"
                     >
                       Delete
                     </button>
@@ -369,7 +369,7 @@ export default function AdminRestaurants() {
                 </div>
 
                 {activeDishRestaurantId === restaurant.id ? (
-                  <div className="mt-4 rounded-xl border border-[#2A2A2A] bg-[#141414] p-3">
+                  <div className="mt-4 rounded-xl border border-[#2A2A2A] bg-[#141414] p-3 transition-all duration-300 hover:border-[#333]">
                     <p className="text-sm font-medium text-white">Edit Dishes</p>
 
                     <div className="mt-3 grid gap-2 md:grid-cols-4">
@@ -398,7 +398,7 @@ export default function AdminRestaurants() {
                         type="button"
                         onClick={() => handleAddDish(restaurant.id)}
                         disabled={dishSaving}
-                        className="rounded-xl bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#2F2F2F] disabled:opacity-60"
+                        className="rounded-xl bg-linear-to-r from-[#EE6A2C] to-[#F68C3E] px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-105 disabled:opacity-60"
                       >
                         {dishSaving ? 'Saving...' : 'Add Dish'}
                       </button>
@@ -420,7 +420,7 @@ export default function AdminRestaurants() {
                     ) : (
                       <div className="mt-3 space-y-2">
                         {dishes.map((dish) => (
-                          <div key={dish.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] p-2">
+                          <div key={dish.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] p-2 transition-all duration-300 hover:border-[#3A3A3A]">
                             <div>
                               <p className="text-sm text-white">{dish.name}</p>
                               <p className="text-xs text-[#A1A1AA]">
@@ -431,14 +431,14 @@ export default function AdminRestaurants() {
                               <button
                                 type="button"
                                 onClick={() => openDishEditModal(dish)}
-                                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1 text-xs text-white hover:border-[#3A3A3A]"
+                                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1 text-xs text-white transition-all hover:border-[#EE6A2C]/55 hover:bg-[#18120E]"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteDish(dish.id, restaurant.id)}
-                                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1 text-xs text-white hover:border-[#3A3A3A]"
+                                className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1 text-xs text-white transition-all hover:border-rose-500/55 hover:bg-rose-500/10"
                               >
                                 Delete
                               </button>

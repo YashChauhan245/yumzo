@@ -157,7 +157,7 @@ export default function AdminMenu() {
       title="Menu Management"
       subtitle="Manage food items for each restaurant."
     >
-      <section className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5">
+      <section className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
         <h2 className="text-lg font-semibold">Add Menu Item</h2>
         <form onSubmit={handleCreate} className="mt-4 grid gap-3 md:grid-cols-2">
           <select
@@ -207,14 +207,14 @@ export default function AdminMenu() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-xl bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white hover:bg-[#2F2F2F] disabled:opacity-60"
+            className="rounded-xl bg-linear-to-r from-[#EE6A2C] to-[#F68C3E] px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-105 disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Add Item'}
           </button>
         </form>
       </section>
 
-      <section className="mt-5 rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5">
+      <section className="mt-5 rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">All Menu Items</h2>
           <select
@@ -240,7 +240,7 @@ export default function AdminMenu() {
         ) : (
           <div className="mt-4 space-y-3">
             {menuItems.map((item) => (
-              <article key={item.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4">
+              <article key={item.id} className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] p-4 transition-all duration-300 hover:border-[#3A3A3A] hover:-translate-y-0.5 hover:shadow-[0_12px_22px_rgba(0,0,0,0.22)]">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium text-white">{item.name}</p>
@@ -249,13 +249,13 @@ export default function AdminMenu() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(item)}
-                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white transition-all hover:border-[#EE6A2C]/55 hover:bg-[#18120E]"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white hover:border-[#3A3A3A]"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-1.5 text-sm text-white transition-all hover:border-rose-500/55 hover:bg-rose-500/10"
                     >
                       Delete
                     </button>

@@ -72,7 +72,7 @@ export default function AdminDashboard() {
 
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {cardList.map((card, index) => (
-              <article key={card.key} className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-4">
+              <article key={card.key} className="rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
                 <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">{card.label}</p>
                 <p className="mt-3 text-3xl font-semibold text-white">{stats?.[card.key] ?? 0}</p>
                 <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[#111]">
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
           </section>
 
           <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-            <article className="rounded-2xl border border-[#2A2A2A] bg-[#171717] p-5">
+            <article className="rounded-2xl border border-[#2A2A2A] bg-[#171717] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Revenue Momentum</h3>
@@ -112,7 +112,7 @@ export default function AdminDashboard() {
               </div>
             </article>
 
-            <article className="rounded-2xl border border-[#2A2A2A] bg-[#171717] p-5">
+            <article className="rounded-2xl border border-[#2A2A2A] bg-[#171717] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_16px_30px_rgba(0,0,0,0.28)]">
               <h3 className="text-lg font-semibold text-white">Order Mix</h3>
               <p className="mb-4 text-sm text-[#A1A1AA]">Current channel split</p>
 

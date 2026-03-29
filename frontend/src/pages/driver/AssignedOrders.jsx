@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { driverAPI, getApiErrorMessage } from '../../services/api';
 import RejectReasonModal from '../../components/ui/RejectReasonModal';
 
+const APP_LOGO_SRC = '/images/yumzo-logo.svg';
+
 const nextStatusMap = {
   preparing: 'picked_up',
   picked_up: 'out_for_delivery',
@@ -212,19 +214,22 @@ export default function AssignedOrders() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] px-4 py-6 md:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_8%_8%,rgba(236,109,49,0.16),transparent_30%),radial-gradient(circle_at_92%_14%,rgba(245,184,112,0.12),transparent_32%),linear-gradient(180deg,#0B0B0B_0%,#0E0E0E_50%,#0B0B0B_100%)] px-4 py-6 md:px-8">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
+        <div className="mb-5 flex items-center justify-between rounded-2xl border border-[#2A2A2A] bg-linear-to-r from-[#1A1A1A] to-[#161616] px-5 py-4 shadow-[0_16px_36px_rgba(0,0,0,0.28)]">
+          <div className="flex items-center gap-3">
+            <img src={APP_LOGO_SRC} alt="Yumzo" className="h-10 w-auto" loading="eager" />
+            <div>
             <h1 className="text-xl font-semibold text-white">Assigned Orders</h1>
             <p className="text-sm text-[#A1A1AA]">Track and update your delivery lifecycle in real time.</p>
+            </div>
           </div>
-          <Link to="/driver/dashboard" className="text-sm text-[#D4D4D8] hover:underline">
+          <Link to="/driver/dashboard" className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-[#D4D4D8] transition-all hover:border-[#3A3A3A] hover:bg-[#141414]">
             Back to dashboard
           </Link>
         </div>
 
-        <section className="mb-5 rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4 md:p-5">
+        <section className="mb-5 rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)] md:p-5">
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">Total Assigned</p>
@@ -259,7 +264,7 @@ export default function AssignedOrders() {
               const isMapOpen = expandedMapOrderId === order.id;
 
               return (
-                <article key={order.id} className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4">
+                <article key={order.id} className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium text-white">Order ID: {order.id}</p>
                     <span className={`inline-flex rounded-lg border px-2.5 py-1 text-xs ${statusClassMap[order.status] || 'border-zinc-600/30 bg-zinc-500/15 text-zinc-300'}`}>
@@ -280,7 +285,7 @@ export default function AssignedOrders() {
                     <button
                       type="button"
                       onClick={() => toggleMapForOrder(order.id)}
-                      className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A]"
+                      className="rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white transition-all hover:border-[#EE6A2C]/60 hover:bg-[#15110E]"
                     >
                       {isMapOpen ? 'Hide customer map' : 'View customer location map'}
                     </button>
@@ -290,7 +295,7 @@ export default function AssignedOrders() {
                     <button
                       type="button"
                       onClick={() => openExternalNavigation(order.delivery_address)}
-                      className="inline-flex rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white hover:border-[#3A3A3A]"
+                      className="inline-flex rounded-lg border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-1.5 text-xs text-white transition-all hover:border-[#EE6A2C]/60 hover:bg-[#15110E]"
                     >
                       Open in Maps App
                     </button>
@@ -319,7 +324,7 @@ export default function AssignedOrders() {
                       <button
                         onClick={() => updateStatus(order)}
                         disabled={updatingOrderId === order.id}
-                        className="rounded-xl bg-[#3A3A3A] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
+                        className="rounded-xl bg-linear-to-r from-[#EE6A2C] to-[#F68C3E] px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-105 disabled:opacity-60"
                       >
                         {updatingOrderId === order.id ? 'Updating...' : cta}
                       </button>

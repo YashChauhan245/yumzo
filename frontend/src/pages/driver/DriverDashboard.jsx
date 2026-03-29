@@ -6,6 +6,7 @@ import { driverAPI, getApiErrorMessage } from '../../services/api';
 import LiveDeliveryMap from '../../components/dashboard/LiveDeliveryMap';
 
 const mockEarnings = [320, 450, 390, 610, 520, 740, 680];
+const APP_LOGO_SRC = '/images/yumzo-logo.svg';
 
 const getSparklinePath = (values, width = 240, height = 70, pad = 6) => {
   const max = Math.max(...values);
@@ -113,20 +114,23 @@ export default function DriverDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] px-4 py-6 md:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_8%_8%,rgba(236,109,49,0.16),transparent_30%),radial-gradient(circle_at_92%_14%,rgba(245,184,112,0.12),transparent_32%),linear-gradient(180deg,#0B0B0B_0%,#0E0E0E_50%,#0B0B0B_100%)] px-4 py-6 md:px-8">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-5 flex items-center justify-between rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] px-5 py-4">
-          <div>
+        <header className="mb-5 flex items-center justify-between rounded-2xl border border-[#2A2A2A] bg-linear-to-r from-[#1A1A1A] to-[#161616] px-5 py-4 shadow-[0_16px_36px_rgba(0,0,0,0.28)]">
+          <div className="flex items-center gap-3">
+            <img src={APP_LOGO_SRC} alt="Yumzo" className="h-10 w-auto" loading="eager" />
+            <div>
             <h1 className="text-xl font-semibold text-white">Driver Command Center</h1>
             <p className="text-sm text-[#A1A1AA]">Welcome back, {user?.name || 'Driver'}. Track routes, deliveries, and order flow live.</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/driver/orders/available" className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-4 py-2 text-sm text-white transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]">
+            <Link to="/driver/orders/available" className="rounded-xl border border-[#3C2A1E] bg-[#120F0D] px-4 py-2 text-sm font-medium text-[#F3E3D3] transition-all hover:border-[#EE6A2C] hover:bg-[#1A1410] hover:text-white">
               Available
             </Link>
             <button
               onClick={logout}
-              className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-4 py-2 text-sm text-white transition-colors hover:border-[#3A3A3A] hover:text-[#D4D4D8]"
+              className="rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-4 py-2 text-sm text-white transition-all hover:border-[#3A3A3A] hover:bg-[#141414] hover:text-[#D4D4D8]"
             >
               Logout
             </button>
@@ -137,7 +141,7 @@ export default function DriverDashboard() {
 
         <section className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {quickStats.map((stat) => (
-            <article key={stat.label} className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4">
+            <article key={stat.label} className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.3)]">
               <p className="text-xs uppercase tracking-wide text-[#A1A1AA]">{stat.label}</p>
               <p className="mt-2 text-2xl font-semibold text-white">{stat.value}</p>
               <p className="mt-1 text-xs text-[#7E7E87]">{stat.helper}</p>
@@ -146,7 +150,7 @@ export default function DriverDashboard() {
         </section>
 
         <section className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_20px_34px_rgba(0,0,0,0.28)]">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-white">Earnings Trend</h2>
@@ -168,15 +172,15 @@ export default function DriverDashboard() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_20px_34px_rgba(0,0,0,0.28)]">
             <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
             <p className="mt-1 text-sm text-[#A1A1AA]">Jump directly to your work queue</p>
 
             <div className="mt-4 space-y-2">
-              <Link to="/driver/orders/available" className="block rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white hover:border-[#3A3A3A]">
+              <Link to="/driver/orders/available" className="block rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white transition-all hover:border-[#EE6A2C]/60 hover:bg-[#15110E]">
                 View available orders
               </Link>
-              <Link to="/driver/orders/assigned" className="block rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white hover:border-[#3A3A3A]">
+              <Link to="/driver/orders/assigned" className="block rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white transition-all hover:border-[#EE6A2C]/60 hover:bg-[#15110E]">
                 Manage assigned orders
               </Link>
             </div>
@@ -192,11 +196,11 @@ export default function DriverDashboard() {
         </section>
 
         <section className="mt-5 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-3">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-3 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)]">
             <LiveDeliveryMap />
           </article>
 
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)]">
             <h2 className="text-lg font-semibold text-white">Active Orders</h2>
             <p className="mt-1 text-sm text-[#A1A1AA]">Live status updates</p>
 
@@ -216,7 +220,7 @@ export default function DriverDashboard() {
         </section>
 
         <section className="mt-5">
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)]">
             <h2 className="text-lg font-semibold text-white">Completed Deliveries</h2>
             <p className="mt-1 text-sm text-[#A1A1AA]">{completedOrders.length} completed</p>
 
@@ -233,7 +237,7 @@ export default function DriverDashboard() {
         </section>
 
         <section className="mt-5 grid gap-4 lg:grid-cols-2">
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Available Orders</h2>
               <span className="text-xs text-[#A1A1AA]">{availableOrders.length} open</span>
@@ -246,7 +250,7 @@ export default function DriverDashboard() {
                   <p className="mt-1 text-xs text-[#8D8D97]">{order.delivery_address}</p>
                   <button
                     onClick={() => handleAccept(order.id)}
-                    className="mt-2 rounded-lg bg-[#3A3A3A] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2F2F2F]"
+                    className="mt-2 rounded-lg bg-linear-to-r from-[#EE6A2C] to-[#F68C3E] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:brightness-105"
                   >
                     Accept
                   </button>
@@ -256,7 +260,7 @@ export default function DriverDashboard() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5">
+          <article className="rounded-2xl border border-[#2A2A2A] bg-[#151515] p-5 transition-all duration-300 hover:border-[#3A3A3A] hover:shadow-[0_18px_32px_rgba(0,0,0,0.28)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Assigned Orders</h2>
               <span className="text-xs text-[#A1A1AA]">{activeOrders.length} active</span>
@@ -269,7 +273,7 @@ export default function DriverDashboard() {
                   <p className="mt-1 text-xs text-[#8D8D97]">Status: {order.status.replaceAll('_', ' ')}</p>
                   <button
                     onClick={() => handleDeliverUpdate(order)}
-                    className="mt-2 rounded-lg bg-[#3A3A3A] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#2F2F2F]"
+                    className="mt-2 rounded-lg bg-linear-to-r from-[#EE6A2C] to-[#F68C3E] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:brightness-105"
                   >
                     Deliver
                   </button>
