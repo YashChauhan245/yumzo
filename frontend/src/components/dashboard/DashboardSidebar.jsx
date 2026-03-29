@@ -78,7 +78,7 @@ const DashboardSidebar = ({ collapsed, onToggle, activeNav, onNavChange }) => {
   return (
     <aside className={`dash-sidebar ${collapsed ? 'collapsed' : ''}`}>
       {/* Logo */}
-      <Link to="/" className="sidebar-logo">
+      <Link to="/home" className="sidebar-logo">
         <img src={brandLogoSrc} alt="Yumzo" className="sidebar-brand-logo" loading="eager" />
       </Link>
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import '../../styles/auth.css';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 const APP_LOGO_SRC = '/images/yumzo-logo.svg';
@@ -67,7 +68,7 @@ const Signup = () => {
         phone: form.phone || undefined,
       });
       toast.success('Account created! Welcome to Yumzo 🎉');
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err) {
       const serverErrors = err.response?.data?.errors;
       if (serverErrors) {
@@ -95,30 +96,38 @@ const Signup = () => {
   ];
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B0B0B] p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-left">
-          <img src={APP_LOGO_SRC} alt="Yumzo" className="h-10 w-auto" loading="eager" />
-          <p className="mt-2 text-sm text-[#A1A1AA]">Create your account.</p>
-        </div>
+    <div className="auth-page">
+      <div className="auth-shell">
+        <aside className="auth-aside" aria-hidden="true">
+          <img src={APP_LOGO_SRC} alt="Yumzo" className="auth-logo" loading="eager" />
+          <span className="auth-kicker">Create account</span>
+          <h1 className="auth-aside-title">Set up your Yumzo profile in under a minute.</h1>
+          <p className="auth-aside-copy">
+            Join as customer or driver and get a polished flow for ordering, delivery tracking, and payments.
+          </p>
+          <div className="auth-points">
+            <div className="auth-point"><span className="auth-point-dot" /> One account, multiple order journeys</div>
+            <div className="auth-point"><span className="auth-point-dot" /> Smart delivery and status visibility</div>
+            <div className="auth-point"><span className="auth-point-dot" /> Secure onboarding with quick validation</div>
+          </div>
+        </aside>
 
-        <div className="surface-card rounded-2xl p-6">
-          <h2 className="mb-1 text-xl font-semibold text-white">
-            Create an account
-          </h2>
-          <p className="mb-6 text-sm text-[#A1A1AA]">Use your details below to set up your Yumzo profile.</p>
+        <section className="auth-card">
+          <div className="auth-card-head">
+            <img src={APP_LOGO_SRC} alt="Yumzo" className="auth-logo" loading="eager" />
+            <h2 className="auth-card-title">Create an account</h2>
+            <p className="auth-card-copy">Use your details below to set up your Yumzo profile.</p>
+          </div>
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            <div>
-              <label htmlFor="role" className="mb-1 block text-sm font-medium text-white">
-                Account role
-              </label>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div className="auth-field">
+              <label htmlFor="role" className="auth-label">Account role</label>
               <select
                 id="role"
                 name="role"
                 value={form.role}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3A3A3A]"
+                className="auth-select"
               >
                 <option value="customer">Customer</option>
                 <option value="driver">Driver</option>
@@ -126,13 +135,8 @@ const Signup = () => {
             </div>
 
             {fields.map(({ id, label, type, placeholder, autoComplete }) => (
-              <div key={id}>
-                <label
-                  htmlFor={id}
-                  className="mb-1 block text-sm font-medium text-white"
-                >
-                  {label}
-                </label>
+              <div key={id} className="auth-field">
+                <label htmlFor={id} className="auth-label">{label}</label>
                 <input
                   id={id}
                   name={id}
@@ -141,35 +145,23 @@ const Signup = () => {
                   value={form[id]}
                   onChange={handleChange}
                   placeholder={placeholder}
-                  className={`w-full rounded-xl border bg-[#0B0B0B] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3A3A3A] ${
-                    errors[id] ? 'border-red-400' : 'border-[#2A2A2A]'
-                  }`}
+                  className={`auth-input ${errors[id] ? 'error' : ''}`}
                 />
-                {errors[id] && (
-                  <p className="mt-1 text-sm text-red-500">{errors[id]}</p>
-                )}
+                {errors[id] && <p className="auth-error">{errors[id]}</p>}
               </div>
             ))}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-[#3A3A3A] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
-            >
+            <button type="submit" disabled={loading} className="auth-submit">
               {loading ? 'Creating account…' : 'Create account'}
             </button>
           </form>
 
-          <p className="mt-6 text-sm text-[#A1A1AA]">
-            Already have an account?{' '}
-            <Link
-              to="/login"
-              className="font-medium text-[#D4D4D8] hover:underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </div>
+          <div className="auth-links">
+            <p className="auth-link-copy">
+              Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

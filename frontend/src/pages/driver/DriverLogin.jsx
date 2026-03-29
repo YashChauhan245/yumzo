@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import '../../styles/auth.css';
+
+const APP_LOGO_SRC = '/images/yumzo-logo.svg';
 
 export default function DriverLogin() {
   const navigate = useNavigate();
@@ -37,53 +40,71 @@ export default function DriverLogin() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B0B0B] p-4">
-      <div className="w-full max-w-md rounded-2xl border border-[#2A2A2A] bg-[#1A1A1A] p-6">
-        <h1 className="text-2xl font-semibold text-white">Driver Login</h1>
-        <p className="mt-1 text-sm text-[#A1A1AA]">Sign in to manage deliveries.</p>
+    <div className="auth-page">
+      <div className="auth-shell">
+        <aside className="auth-aside" aria-hidden="true">
+          <img src={APP_LOGO_SRC} alt="Yumzo" className="auth-logo" loading="eager" />
+          <span className="auth-kicker">Driver portal</span>
+          <h1 className="auth-aside-title">Own every delivery with confidence.</h1>
+          <p className="auth-aside-copy">
+            Sign in to accept nearby orders, update live status, and keep every drop smooth for customers.
+          </p>
+          <div className="auth-points">
+            <div className="auth-point"><span className="auth-point-dot" /> Instant order assignment updates</div>
+            <div className="auth-point"><span className="auth-point-dot" /> Real-time location and status flow</div>
+            <div className="auth-point"><span className="auth-point-dot" /> Fast dashboard access for active runs</div>
+          </div>
+        </aside>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-white">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={onChange}
-              className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white outline-none focus:border-[#3A3A3A]"
-              placeholder="driver@example.com"
-            />
+        <section className="auth-card">
+          <div className="auth-card-head">
+            <img src={APP_LOGO_SRC} alt="Yumzo" className="auth-logo" loading="eager" />
+            <h1 className="auth-card-title">Driver Login</h1>
+            <p className="auth-card-copy">Sign in to manage deliveries.</p>
           </div>
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-white">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={form.password}
-              onChange={onChange}
-              className="w-full rounded-xl border border-[#2A2A2A] bg-[#0B0B0B] px-3 py-2 text-sm text-white outline-none focus:border-[#3A3A3A]"
-              placeholder="••••••••"
-            />
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="auth-field">
+              <label htmlFor="email" className="auth-label">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={onChange}
+                className="auth-input"
+                placeholder="driver@example.com"
+              />
+            </div>
+
+            <div className="auth-field">
+              <label htmlFor="password" className="auth-label">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={onChange}
+                className="auth-input"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="auth-submit"
+            >
+              {loading ? 'Signing in...' : 'Sign in as Driver'}
+            </button>
+          </form>
+
+          <div className="auth-links">
+            <p className="auth-link-copy">
+              Customer account? <Link to="/login" className="auth-link">Login here</Link>
+            </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-[#3A3A3A] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
-          >
-            {loading ? 'Signing in...' : 'Sign in as Driver'}
-          </button>
-        </form>
-
-        <p className="mt-4 text-sm text-[#A1A1AA]">
-          Customer account?{' '}
-          <Link to="/login" className="text-[#D4D4D8] hover:underline">
-            Login here
-          </Link>
-        </p>
+        </section>
       </div>
     </div>
   );

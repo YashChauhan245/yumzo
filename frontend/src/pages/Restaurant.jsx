@@ -273,7 +273,7 @@ const Restaurant = () => {
             title="No matching items"
             description="Try changing category or veg/non-veg filter to see more dishes."
             ctaLabel="Back to restaurants"
-            ctaTo="/"
+            ctaTo="/home"
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

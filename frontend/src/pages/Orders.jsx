@@ -18,6 +18,30 @@ const orderTimeline = ['pending', 'confirmed', 'preparing', 'picked_up', 'out_fo
 const deliveryTimeline = ['preparing', 'picked_up', 'out_for_delivery', 'delivered'];
 const orderStatusClass = 'bg-[#2A2A2A] text-[#A1A1AA]';
 
+const formatIstDateTime = (input) => {
+  if (!input) return '--';
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(input));
+};
+
+const formatIstTime = (input) => {
+  if (!input) return '--';
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  }).format(new Date(input));
+};
+
 const resolveSocketUrl = () => {
   const explicitUrl = import.meta.env.VITE_SOCKET_URL;
   if (explicitUrl) return explicitUrl;
@@ -279,7 +303,7 @@ const Orders = () => {
               />
             </div>
             <p className="mt-2 text-xs text-[#A1A1AA]">
-              Live location updated at {new Date(location.updated_at).toLocaleTimeString()} ({Number(location.latitude).toFixed(5)}, {Number(location.longitude).toFixed(5)})
+              Live location updated at {formatIstTime(location.updated_at)} IST ({Number(location.latitude).toFixed(5)}, {Number(location.longitude).toFixed(5)})
             </p>
           </>
         ) : (
@@ -360,7 +384,7 @@ const Orders = () => {
 
               <div className="mt-3 grid gap-2 text-sm text-[#A1A1AA] sm:grid-cols-2">
                 <p>Total: ₹{Number(order.total_price ?? order.total_amount ?? 0).toFixed(2)}</p>
-                <p>Date: {new Date(order.created_at).toLocaleString()}</p>
+                <p>Date: {formatIstDateTime(order.created_at)} IST</p>
                 <p className="sm:col-span-2">Address: {order.delivery_address}</p>
               </div>
 

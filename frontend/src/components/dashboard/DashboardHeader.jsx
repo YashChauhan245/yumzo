@@ -1,9 +1,30 @@
 import { useState } from 'react';
 
+const getIstHour = () => {
+  const hourString = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    hour12: false,
+  }).format(new Date());
+
+  return Number(hourString);
+};
+
+const getIstTimeLabel = () => (
+  new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date())
+);
+
 const DashboardHeader = ({ user, theme, onToggleTheme }) => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const currentIstHour = getIstHour();
+  const currentIstTime = getIstTimeLabel();
 
   const notifications = [
     { id: 1, text: 'New order #1284 from Mumbai Central', time: '2 min ago', type: 'order' },
@@ -17,9 +38,9 @@ const DashboardHeader = ({ user, theme, onToggleTheme }) => {
       <div className="header-left">
         <div className="header-greeting">
           <h1 className="greeting-title">
-            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, {user?.name || 'Yash'} 👋
+            Good {currentIstHour < 12 ? 'Morning' : currentIstHour < 17 ? 'Afternoon' : 'Evening'}, {user?.name || 'Yash'} 👋
           </h1>
-          <p className="greeting-sub">Here's what's happening with Yumzo today.</p>
+          <p className="greeting-sub">Here's what's happening with Yumzo today. {currentIstTime} IST</p>
         </div>
       </div>
 

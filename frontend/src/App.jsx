@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const Signup = lazy(() => import('./components/auth/Signup'));
+const Landing = lazy(() => import('./pages/Landing'));
 const Home = lazy(() => import('./pages/Home'));
 const Restaurant = lazy(() => import('./pages/Restaurant'));
 const Cart = lazy(() => import('./pages/Cart'));
@@ -59,11 +60,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/driver/login" element={<DriverLogin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/dashboard-preview" element={<DashboardPreview />} />
 
           {/* Customer-only routes */}
           <Route
-            path="/"
+            path="/home"
             element={
               <ProtectedRoute allowedRoles={['customer']}>
                 <Home />
@@ -186,7 +188,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
       </AuthProvider>

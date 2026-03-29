@@ -213,7 +213,7 @@ export default function FoodReelsPage() {
       <header className="food-reels-header absolute left-0 top-0 z-40 flex w-full items-center justify-between px-3 py-3 md:px-5">
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           className="food-reels-back-btn rounded-full bg-black/45 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur"
         >
           Back

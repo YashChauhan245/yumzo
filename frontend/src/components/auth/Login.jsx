@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import '../../styles/auth.css';
 
 const APP_LOGO_SRC = '/images/yumzo-logo.svg';
 
@@ -9,7 +10,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/home';
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
@@ -45,7 +46,7 @@ const Login = () => {
         ? '/driver/dashboard'
         : loggedInUser?.role === 'admin'
           ? '/admin/dashboard'
-          : '/';
+          : '/home';
       const nextPath = from === '/login' ? fallbackPath : from;
       navigate(nextPath || fallbackPath, { replace: true });
     } catch (err) {
@@ -58,27 +59,32 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0B0B0B] p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-left">
-          <img src={APP_LOGO_SRC} alt="Yumzo" className="h-10 w-auto" loading="eager" />
-          <p className="mt-2 text-sm text-[#A1A1AA]">Sign in to continue.</p>
-        </div>
+    <div className="auth-page">
+      <div className="auth-shell">
+        <aside className="auth-aside" aria-hidden="true">
+          <img src={APP_LOGO_SRC} alt="Yumzo" className="auth-logo" loading="eager" />
+          <span className="auth-kicker">Fast food flow</span>
+          <h1 className="auth-aside-title">Your next order should feel effortless.</h1>
+          <p className="auth-aside-copy">
+            Sign in to continue with live tracking, quick re-orders, and all your saved places in one flow.
+          </p>
+          <div className="auth-points">
+            <div className="auth-point"><span className="auth-point-dot" /> Real-time order updates</div>
+            <div className="auth-point"><span className="auth-point-dot" /> Faster checkout for repeat orders</div>
+            <div className="auth-point"><span className="auth-point-dot" /> Unified customer and driver access</div>
+          </div>
+        </aside>
 
-        <div className="surface-card rounded-2xl p-6">
-          <h2 className="mb-1 text-xl font-semibold text-white">
-            Welcome back
-          </h2>
-          <p className="mb-6 text-sm text-[#A1A1AA]">Sign in to continue ordering from your favorite places.</p>
+        <section className="auth-card">
+          <div className="auth-card-head">
+            <img src={APP_LOGO_SRC} alt="Yumzo" className="auth-logo" loading="eager" />
+            <h2 className="auth-card-title">Welcome back</h2>
+            <p className="auth-card-copy">Sign in to continue ordering from your favorite places.</p>
+          </div>
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            <div>
-              <label
-                htmlFor="email"
-                className="mb-1 block text-sm font-medium text-white"
-              >
-                Email address
-              </label>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div className="auth-field">
+              <label htmlFor="email" className="auth-label">Email address</label>
               <input
                 id="email"
                 name="email"
@@ -87,22 +93,13 @@ const Login = () => {
                 value={form.email}
                 onChange={handleChange}
                 placeholder="you@example.com"
-                className={`w-full rounded-xl border bg-[#0B0B0B] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3A3A3A] ${
-                  errors.email ? 'border-red-400' : 'border-[#2A2A2A]'
-                }`}
+                className={`auth-input ${errors.email ? 'error' : ''}`}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-              )}
+              {errors.email && <p className="auth-error">{errors.email}</p>}
             </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="mb-1 block text-sm font-medium text-white"
-              >
-                Password
-              </label>
+            <div className="auth-field">
+              <label htmlFor="password" className="auth-label">Password</label>
               <input
                 id="password"
                 name="password"
@@ -111,41 +108,25 @@ const Login = () => {
                 value={form.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className={`w-full rounded-xl border bg-[#0B0B0B] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3A3A3A] ${
-                  errors.password ? 'border-red-400' : 'border-[#2A2A2A]'
-                }`}
+                className={`auth-input ${errors.password ? 'error' : ''}`}
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-              )}
+              {errors.password && <p className="auth-error">{errors.password}</p>}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-[#3A3A3A] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#2F2F2F] disabled:opacity-60"
-            >
+            <button type="submit" disabled={loading} className="auth-submit">
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 
-          <p className="mt-6 text-sm text-[#A1A1AA]">
-            Don&apos;t have an account?{' '}
-            <Link
-              to="/signup"
-              className="font-medium text-[#D4D4D8] hover:underline"
-            >
-              Sign up
-            </Link>
-          </p>
-
-          <p className="mt-2 text-sm text-[#A1A1AA]">
-            Driver account?{' '}
-            <Link to="/driver/login" className="font-medium text-[#D4D4D8] hover:underline">
-              Driver login
-            </Link>
-          </p>
-        </div>
+          <div className="auth-links">
+            <p className="auth-link-copy">
+              Don&apos;t have an account? <Link to="/signup" className="auth-link">Sign up</Link>
+            </p>
+            <p className="auth-link-copy">
+              Driver account? <Link to="/driver/login" className="auth-link">Driver login</Link>
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

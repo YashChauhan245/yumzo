@@ -31,7 +31,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], allowedEmails = [] }) => 
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    const redirectPath = user.role === 'driver' ? '/driver/dashboard' : user.role === 'admin' ? '/admin/dashboard' : '/';
+    const redirectPath = user.role === 'driver' ? '/driver/dashboard' : user.role === 'admin' ? '/admin/dashboard' : '/home';
     return <Navigate to={redirectPath} replace />;
   }
 
@@ -39,7 +39,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], allowedEmails = [] }) => 
     const normalizedAllowedEmails = allowedEmails.map((email) => canonicalizeEmail(email));
     const currentUserEmail = canonicalizeEmail(user?.email || '');
     if (!normalizedAllowedEmails.includes(currentUserEmail)) {
-      const redirectPath = user.role === 'customer' ? '/' : '/login';
+      const redirectPath = user.role === 'customer' ? '/home' : '/login';
       return <Navigate to={redirectPath} replace />;
     }
   }

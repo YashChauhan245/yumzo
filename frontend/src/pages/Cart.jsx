@@ -274,7 +274,7 @@ const Cart = () => {
               title="Your cart is empty"
               description="Add items from restaurant menus to start your order."
               ctaLabel="Browse restaurants"
-              ctaTo="/"
+              ctaTo="/home"
             />
           ) : (
             items.map((item) => (
