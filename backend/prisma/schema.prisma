@@ -1,0 +1,316 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GroupOrderStatus {
+  OPEN
+  LOCKED
+  CHECKED_OUT
+  CANCELLED
+}
+
+model User {
+  id               String             @id @default(uuid())
+  name             String
+  email            String             @unique
+  password         String
+  phone            String?
+  role             String             @default("customer")
+  avatarUrl        String?            @map("avatar_url")
+  isActive         Boolean            @default(true) @map("is_active")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  addresses        Address[]
+  restaurants      Restaurant[]
+  cartItems        CartItem[]
+  orders           Order[]            @relation("customerOrders")
+  assignedOrders   Order[]            @relation("driverOrders")
+  payments         Payment[]
+  reels            Reel[]
+  reelLikes        ReelLike[]
+  reelComments     ReelComment[]
+  groupOrders      GroupOrder[]       @relation("groupOrderOwner")
+  groupMembers     GroupOrderMember[]
+  groupOrderItems  GroupOrderItem[]   @relation("groupOrderItemOwner")
+  fraudEvents      FraudEvent[]
+  deliveryProofs   DeliveryProof[]
+  qrVerifications  QrSealVerification[]
+  restaurantReviews RestaurantReview[]
+
+  @@map("users")
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  userId      String
+  label       String?
+  line1       String
+  line2       String?
+  city        String
+  state       String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Restaurant {
+  id          String    @id @default(uuid())
+  ownerId     String    @map("owner_id")
+  name        String
+  description String?
+  cuisineType String?   @map("cuisine_type")
+  address     String
+  city        String
+  phone       String?
+  imageUrl    String?   @map("image_url")
+  isActive    Boolean   @default(true) @map("is_active")
+  rating      Float     @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  foods       Food[]
+  orders      Order[]
+  cartItems   CartItem[]
+  reviews     RestaurantReview[]
+  groupOrders GroupOrder[]
+
+  @@map("restaurants")
+}
+
+model RestaurantReview {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  restaurantId  String      @map("restaurant_id")
+  rating        Int
+  reviewText    String?     @map("review_text")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, restaurantId])
+  @@map("restaurant_reviews")
+}
+
+model Food {
+  id            String      @id @default(uuid())
+  restaurantId  String      @map("restaurant_id")
+  name          String
+  description   String?
+  price         Decimal     @db.Decimal(10, 2)
+  category      String?
+  imageUrl      String?     @map("image_url")
+  isVeg         Boolean     @default(false) @map("is_veg")
+  isAvailable   Boolean     @default(true) @map("is_available")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  cartItems     CartItem[]  @relation("FoodToCartItems")
+  orderItems    OrderItem[]
+  groupOrderItems GroupOrderItem[]
+
+  @@map("menu_items")
+}
+
+model CartItem {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  menuItemId    String      @map("menu_item_id")
+  restaurantId  String      @map("restaurant_id")
+  quantity      Int         @default(1)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuItem      Food        @relation("FoodToCartItems", fields: [menuItemId], references: [id], onDelete: Cascade)
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, menuItemId])
+  @@map("cart_items")
+}
+
+model Order {
+  id                  String         @id @default(uuid())
+  userId              String         @map("user_id")
+  driverId            String?        @map("driver_id")
+  restaurantId        String         @map("restaurant_id")
+  status              String         @default("pending")
+  totalPrice          Decimal        @map("total_amount") @db.Decimal(10, 2)
+  deliveryAddress     String         @map("delivery_address")
+  notes               String?
+  qrSealCode          String?        @ignore
+  fraudScoreAtOrder   Int            @ignore
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  user                User           @relation("customerOrders", fields: [userId], references: [id], onDelete: Cascade)
+  driver              User?          @relation("driverOrders", fields: [driverId], references: [id], onDelete: SetNull)
+  restaurant          Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items               OrderItem[]
+  payment             Payment?
+  deliveryProofs      DeliveryProof[]
+  qrVerifications     QrSealVerification[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String    @id @default(uuid())
+  orderId       String    @map("order_id")
+  foodId        String    @map("menu_item_id")
+  name          String
+  price         Decimal   @db.Decimal(10, 2)
+  quantity      Int
+
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  food          Food      @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@map("order_items")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique @map("order_id")
+  userId          String        @map("user_id")
+  amount          Decimal       @db.Decimal(10, 2)
+  method          String        @map("payment_method")
+  status          String        @default("pending") @map("payment_status")
+  transactionId   String?       @map("transaction_id")
+  failureReason   String?       @map("failure_reason")
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Reel {
+  id              String         @id @default(uuid())
+  userId          String
+  foodId          String?
+  title           String
+  caption         String?
+  videoUrl        String
+  thumbnailUrl    String?
+  createdAt       DateTime       @default(now())
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes           ReelLike[]
+  comments        ReelComment[]
+}
+
+model ReelLike {
+  id              String     @id @default(uuid())
+  reelId          String
+  userId          String
+  createdAt       DateTime   @default(now())
+
+  reel            Reel       @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reelId, userId])
+}
+
+model ReelComment {
+  id              String     @id @default(uuid())
+  reelId          String
+  userId          String
+  comment         String
+  createdAt       DateTime   @default(now())
+
+  reel            Reel       @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GroupOrder {
+  id               String             @id @default(uuid())
+  ownerId          String
+  restaurantId     String
+  shareCode        String             @unique
+  status           GroupOrderStatus   @default(OPEN)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  owner            User               @relation("groupOrderOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  restaurant       Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  members          GroupOrderMember[]
+  items            GroupOrderItem[]
+}
+
+model GroupOrderMember {
+  id               String      @id @default(uuid())
+  groupOrderId     String
+  userId           String
+  amountShare      Decimal     @db.Decimal(10, 2)
+  createdAt        DateTime    @default(now())
+
+  groupOrder       GroupOrder  @relation(fields: [groupOrderId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupOrderId, userId])
+}
+
+model GroupOrderItem {
+  id               String      @id @default(uuid())
+  groupOrderId     String
+  menuItemId       String
+  addedByUserId    String
+  quantity         Int         @default(1)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  groupOrder       GroupOrder  @relation(fields: [groupOrderId], references: [id], onDelete: Cascade)
+  menuItem         Food        @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  addedByUser      User        @relation("groupOrderItemOwner", fields: [addedByUserId], references: [id], onDelete: Cascade)
+
+  @@map("group_order_items")
+}
+
+model FraudEvent {
+  id               String     @id @default(uuid())
+  userId           String
+  eventType        String
+  scoreDelta       Int
+  notes            String?
+  createdAt        DateTime   @default(now())
+
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DeliveryProof {
+  id               String     @id @default(uuid())
+  orderId          String
+  deliveryPartnerId String
+  imageUrl         String
+  note             String?
+  createdAt        DateTime   @default(now())
+
+  order            Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryPartner  User       @relation(fields: [deliveryPartnerId], references: [id], onDelete: Cascade)
+}
+
+model QrSealVerification {
+  id               String     @id @default(uuid())
+  orderId          String
+  userId           String
+  scannedCode      String
+  isValid          Boolean
+  createdAt        DateTime   @default(now())
+
+  order            Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

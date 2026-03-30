@@ -1,0 +1,47 @@
+<svg width="420" height="120" viewBox="0 0 420 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="yumzoWordGrad" x1="34" y1="26" x2="236" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff3718"/>
+      <stop offset="1" stop-color="#ff9c16"/>
+    </linearGradient>
+    <linearGradient id="yumzoBunGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffbf5a"/>
+      <stop offset="1" stop-color="#ff8b1a"/>
+    </linearGradient>
+    <linearGradient id="yumzoPattyGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#3c2114"/>
+      <stop offset="1" stop-color="#20120a"/>
+    </linearGradient>
+  </defs>
+
+  <text
+    x="40"
+    y="80"
+    fill="url(#yumzoWordGrad)"
+    stroke="#df3a10"
+    stroke-width="1.4"
+    font-size="76"
+    font-weight="900"
+    font-style="italic"
+    font-family="Arial Black, Impact, Segoe UI Black, sans-serif"
+    letter-spacing="1"
+  >
+    yumzo
+  </text>
+
+  <path d="M28 58h12" stroke="#ff421a" stroke-width="6" stroke-linecap="round"/>
+  <path d="M22 66h16" stroke="#ff421a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M30 74h10" stroke="#ff421a" stroke-width="4" stroke-linecap="round"/>
+
+  <path d="M68 94c30 12 104 12 142-6" stroke="#ffad18" stroke-width="7" stroke-linecap="round"/>
+
+  <g transform="translate(310 22)">
+    <ellipse cx="40" cy="22" rx="31" ry="14" fill="url(#yumzoBunGrad)"/>
+    <ellipse cx="40" cy="54" rx="31" ry="14" fill="url(#yumzoBunGrad)"/>
+    <rect x="10" y="33" width="60" height="6" rx="3" fill="#3fb950"/>
+    <rect x="9" y="40" width="62" height="10" rx="5" fill="url(#yumzoPattyGrad)"/>
+    <circle cx="40" cy="45" r="7" fill="#111111"/>
+  </g>
+
+  <path d="M355 10l8 14-9 3 4-11-10-3 7-3Z" fill="#ffd24a"/>
+</svg>

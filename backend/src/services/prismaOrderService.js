@@ -1,0 +1,354 @@
+const prisma = require('../config/prisma');
+
+// Shared include shapes keep Prisma calls consistent and easier to scan.
+const includeRestaurantDriver = {
+  restaurant: {
+    select: { name: true },
+  },
+  driver: {
+    select: { name: true },
+  },
+};
+
+const includeFullOrderDetails = {
+  restaurant: {
+    select: { name: true },
+  },
+  user: {
+    select: { id: true, name: true },
+  },
+  driver: {
+    select: { name: true },
+  },
+  items: {
+    orderBy: { id: 'asc' },
+  },
+};
+
+const includeDriverQueueOrderDetails = {
+  restaurant: {
+    select: { name: true },
+  },
+  user: {
+    select: { id: true, name: true },
+  },
+  items: {
+    orderBy: { id: 'asc' },
+  },
+};
+
+const formatOrderItem = (item) => ({
+  id: item.id,
+  menu_item_id: item.foodId,
+  name: item.name,
+  price: item.price,
+  quantity: item.quantity,
+  created_at: item.createdAt,
+});
+
+const formatOrder = (order) => ({
+  id: order.id,
+  user_id: order.userId,
+  driver_id: order.driverId || null,
+  driver_name: order.driver?.name || null,
+  restaurant_id: order.restaurantId,
+  restaurant_name: order.restaurant?.name || null,
+  customer_name: order.user?.name || null,
+  status: order.status,
+  total_price: order.totalPrice,
+  total_amount: order.totalPrice,
+  delivery_address: order.deliveryAddress,
+  notes: order.notes,
+  created_at: order.createdAt,
+  updated_at: order.updatedAt,
+  items: Array.isArray(order.items) ? order.items.map(formatOrderItem) : undefined,
+});
+
+const withCustomerName = (order) => ({
+  ...formatOrder(order),
+  customer_name: order.user?.name || null,
+});
+
+const findOrderWithDetailsById = async (orderId) => {
+  return prisma.order.findUnique({
+    where: { id: orderId },
+    include: includeFullOrderDetails,
+  });
+};
+
+const createOrder = async ({ userId, restaurantId, deliveryAddress, notes = null, items }) => {
+  const totalPrice = items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
+
+  const order = await prisma.$transaction(async (tx) => {
+    const createdOrder = await tx.order.create({
+      data: {
+        userId,
+        restaurantId,
+        deliveryAddress,
+        notes,
+        totalPrice,
+      },
+    });
+
+    const createdItems = await Promise.all(
+      items.map((item) =>
+        tx.orderItem.create({
+          data: {
+            orderId: createdOrder.id,
+            foodId: item.menuItemId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          },
+        }),
+      ),
+    );
+
+    return { ...createdOrder, items: createdItems };
+  });
+
+  return formatOrder(order);
+};
+
+const findByUser = async (userId, { skip = 0, limit = 10 } = {}) => {
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where: { userId },
+      include: includeRestaurantDriver,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count({ where: { userId } }),
+  ]);
+
+  return {
+    rows: orders.map((order) => formatOrder(order)),
+    total,
+  };
+};
+
+const findByUserAll = async (userId) => {
+  const orders = await prisma.order.findMany({
+    where: { userId },
+    include: includeRestaurantDriver,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return orders.map((order) => formatOrder(order));
+};
+
+const findById = async (orderId, userId) => {
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId,
+    },
+    include: includeFullOrderDetails,
+  });
+
+  return order ? withCustomerName(order) : null;
+};
+
+const updateStatus = async (orderId, status) => {
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: { status },
+  });
+
+  return formatOrder(updated);
+};
+
+const findAvailableForDriver = async () => {
+  const orders = await prisma.order.findMany({
+    where: {
+      status: 'confirmed',
+      driverId: null,
+    },
+    include: includeDriverQueueOrderDetails,
+    orderBy: { createdAt: 'asc' },
+  });
+
+  return orders.map((order) => withCustomerName(order));
+};
+
+const acceptOrder = async ({ orderId, driverId }) => {
+  const result = await prisma.order.updateMany({
+    where: {
+      id: orderId,
+      status: 'confirmed',
+      driverId: null,
+    },
+    data: {
+      driverId,
+      status: 'preparing',
+    },
+  });
+
+  if (result.count === 0) return null;
+
+  const updated = await findOrderWithDetailsById(orderId);
+
+  return updated ? withCustomerName(updated) : null;
+};
+
+const findAssignedToDriver = async (driverId) => {
+  const orders = await prisma.order.findMany({
+    where: {
+      driverId,
+      status: {
+        in: ['preparing', 'picked_up', 'out_for_delivery', 'delivered'],
+      },
+    },
+    include: includeFullOrderDetails,
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return orders.map((order) => withCustomerName(order));
+};
+
+const findTrackableByDriver = async ({ orderId, driverId }) => {
+  return prisma.order.findFirst({
+    where: {
+      id: orderId,
+      driverId,
+      status: {
+        in: ['preparing', 'picked_up', 'out_for_delivery'],
+      },
+    },
+    select: {
+      id: true,
+      userId: true,
+      driverId: true,
+      status: true,
+    },
+  });
+};
+
+const findTrackableByUser = async ({ orderId, userId }) => {
+  return prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId,
+    },
+    select: {
+      id: true,
+      userId: true,
+      driverId: true,
+      status: true,
+    },
+  });
+};
+
+const updateDriverOrderStatus = async ({ orderId, driverId, status }) => {
+  const result = await prisma.order.updateMany({
+    where: {
+      id: orderId,
+      driverId,
+      status: {
+        in: ['preparing', 'picked_up', 'out_for_delivery'],
+      },
+    },
+    data: {
+      status,
+    },
+  });
+
+  if (result.count === 0) return null;
+
+  const updated = await findOrderWithDetailsById(orderId);
+
+  return updated ? withCustomerName(updated) : null;
+};
+
+const rejectAssignedOrder = async ({ orderId, driverId, reason = '' }) => {
+  // Driver can reject only before pickup; then order goes back to available queue.
+  const existing = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      driverId,
+      status: 'preparing',
+    },
+    select: { notes: true },
+  });
+
+  if (!existing) return null;
+
+  const reasonText = reason ? ` Reason: ${reason}` : '';
+  const rejectionNote = `[Driver Rejection] Driver reassigned.${reasonText}`;
+  const nextNotes = existing.notes ? `${existing.notes}\n${rejectionNote}` : rejectionNote;
+
+  const result = await prisma.order.updateMany({
+    where: {
+      id: orderId,
+      driverId,
+      status: 'preparing',
+    },
+    data: {
+      driverId: null,
+      status: 'confirmed',
+      notes: nextNotes,
+    },
+  });
+
+  if (result.count === 0) return null;
+
+  const updated = await findOrderWithDetailsById(orderId);
+
+  return updated ? withCustomerName(updated) : null;
+};
+
+const cancelByUser = async ({ orderId, userId, reason = '' }) => {
+  const existing = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      userId,
+    },
+    select: {
+      id: true,
+      status: true,
+      notes: true,
+    },
+  });
+
+  if (!existing) return null;
+
+  if (!['pending', 'confirmed'].includes(existing.status)) {
+    const error = new Error('Only pending or confirmed orders can be cancelled');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+  const cancellationNote = trimmedReason
+    ? `[Customer Cancellation] ${trimmedReason}`
+    : '[Customer Cancellation] Cancelled by customer';
+  const nextNotes = existing.notes ? `${existing.notes}\n${cancellationNote}` : cancellationNote;
+
+  const updated = await prisma.order.update({
+    where: { id: existing.id },
+    data: {
+      status: 'cancelled',
+      notes: nextNotes,
+    },
+    include: includeRestaurantDriver,
+  });
+
+  return formatOrder(updated);
+};
+
+module.exports = {
+  createOrder,
+  findByUser,
+  findByUserAll,
+  findById,
+  updateStatus,
+  findAvailableForDriver,
+  acceptOrder,
+  findAssignedToDriver,
+  findTrackableByDriver,
+  findTrackableByUser,
+  updateDriverOrderStatus,
+  rejectAssignedOrder,
+  cancelByUser,
+};
